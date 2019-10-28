@@ -922,7 +922,7 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
 }
 
 // Function to generate SSR rating
-vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float musicrate, float goal, float timingscale, bool negbpms) {
+vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float musicrate, float goal, float timingscale) {
     vector<float> output;
 
     // Return 0 for main ouput if the file is not 4k
@@ -953,7 +953,7 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float goal, f
     {
         for (int i = 7; i < rateCount; i++)
         {
-            auto tempVal = MinaSDCalc(NoteInfo, numTracks, i / 10.f, 0.93f, 1.f, negbpms);
+            auto tempVal = MinaSDCalc(NoteInfo, numTracks, i / 10.f, 0.93f, 1.f);
             allrates.emplace_back(tempVal);
         }
     }

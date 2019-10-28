@@ -203,8 +203,7 @@ MinaSDCalc(const vector<NoteInfo>& NoteInfo,
            int numTracks,
            float musicrate,
            float goal,
-           float timingscale,
-           bool negbpms);
+           float timingscale);
 MINACALC_API MinaSD
 MinaSDCalc(const vector<NoteInfo>& NoteInfo,
            int numTracks,
