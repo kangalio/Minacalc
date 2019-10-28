@@ -81,8 +81,6 @@ private:
             true; // Do we moving average the difficulty intervals?
 
     float timingscale; // Timingscale for use in the point proportion function
-    float jumpstreamscaler = 0.975f;
-    float handstreamscaler = 0.92f;
     float finalscaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
                         1.025; // multiplier to standardize baselines
 
@@ -128,15 +126,11 @@ public:
     // clearly)
     int numTracks = 4;
 
-    float vb = 0.f;
-    float vt = 0.f;
-
     // Derivative calc params
     float MusicRate = 1.f;
     float MaxPoints = 0.f; // Total points achievable in the file
     float Scoregoal =
             0.93f; // What proportion of the total points are we trying to get
-    const float toffset = 0.f;
     void TotalMaxPoints(); // Counts up the total points and assigns it
 
     /*	Recursive non-linear calculation function. A player skill is asserted
