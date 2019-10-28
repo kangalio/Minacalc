@@ -46,7 +46,7 @@ inline float cv(vector<float> &input) {
     return sqrt(sd / input.size()) / mean;
 }
 
-inline float downscalebaddies(float& f, float sg) {
+inline float downscale_low_accuracy_scores(float& f, float sg) {
     CalcClamp(f, 0.f, 100.f);
     if (sg >= 0.93f)
         return f;
@@ -239,27 +239,27 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
         stam = Chisel(tech - 0.1f, 2.56f, 1, true, false, false, false, false, false);
 
     output.emplace_back(0.f); //temp
-    output.emplace_back(downscalebaddies(stream, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(stream, Scoregoal));
 
     js = normalizer(js, stream, 7.25f, 0.25f);
-    output.emplace_back(downscalebaddies(js, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(js, Scoregoal));
     hs = normalizer(hs, stream, 6.5f, 0.3f);
     hs = normalizer(hs, js, 11.5f, 0.15f);
-    output.emplace_back(downscalebaddies(hs, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(hs, Scoregoal));
 
     float stambase = max(max(stream, tech* 0.96f), max(js, hs));
     if (stambase == stream)
         stambase *= 0.975f;
 
     stam = normalizer(stam, stambase, 7.75f, 0.2f);
-    output.emplace_back(downscalebaddies(stam, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(stam, Scoregoal));
 
-    output.emplace_back(downscalebaddies(jack, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(jack, Scoregoal));
     jackstam = normalizer(jackstam, jack, 5.5f, 0.25f);
-    output.emplace_back(downscalebaddies(jackstam, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(jackstam, Scoregoal));
     float technorm = max(max(stream, js), hs);
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
-    output.emplace_back(downscalebaddies(tech, Scoregoal));
+    output.emplace_back(downscale_low_accuracy_scores(tech, Scoregoal));
 
     float definitelycj = qprop + hprop + jprop + 0.2f;
     CalcClamp(definitelycj, 0.5f, 1.f);
@@ -297,7 +297,7 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
         output[1] -= sqrt(skadoot - output[1]);
 
     float overall = AggregateScores(output, 0.f, 10.24f, 1);
-    output[0] = downscalebaddies(overall, Scoregoal);
+    output[0] = downscale_low_accuracy_scores(overall, Scoregoal);
 
     float aDvg = mean(output) * 1.2f;
     for (size_t i = 0; i < output.size(); i++) {
@@ -308,7 +308,7 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
             CalcClamp(output[i], 0.f, aDvg);
             output[i] *= grindscaler * grindscaler2;
         }
-        output[i] = downscalebaddies(output[i], Scoregoal);
+        output[i] = downscale_low_accuracy_scores(output[i], Scoregoal);
     }
 
     output[2] *= jumpthrill;
