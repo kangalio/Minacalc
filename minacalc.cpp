@@ -29,28 +29,28 @@ inline void CalcClamp(T& x, U l, V h) {
         x = static_cast<T>(l);
 }
 
-inline float mean(vector<float>& v) {
+inline float mean(vector<float>& input) {
     float sum = 0.f;
-    for (size_t i = 0; i < v.size(); ++i)
-        sum += v[i];
+    for (size_t i = 0; i < input.size(); ++i)
+        sum += input[i];
 
-    return sum / v.size();
+    return sum / input.size();
 }
 
 // Coefficient of variance
-inline float cv(vector<float> &v) {
+inline float cv(vector<float> &input) {
     float sum = 0.f;
     float mean;
     float sd = 0.f;
 
-    for (size_t i = 0; i < v.size(); i++)
-        sum += v[i];
+    for (size_t i = 0; i < input.size(); i++)
+        sum += input[i];
 
-    mean = sum / v.size();
-    for (size_t i = 0; i < v.size(); i++)
-        sd += pow(v[i] - mean, 2);
+    mean = sum / input.size();
+    for (size_t i = 0; i < input.size(); i++)
+        sd += pow(input[i] - mean, 2);
 
-    return sqrt(sd / v.size()) / mean;
+    return sqrt(sd / input.size()) / mean;
 }
 
 inline float downscalebaddies(float& f, float sg) {
@@ -63,46 +63,46 @@ inline float downscalebaddies(float& f, float sg) {
 }
 
 // Specifically for pattern modifiers as the neutral value is 1
-inline void PatternSmooth(vector<float>& v) {
+inline void PatternSmooth(vector<float>& input) {
     float f1 = 1.f;
     float f2 = 1.f;
     float f3 = 1.f;
     float total = 3.f;
 
-    for (size_t i = 0; i < v.size(); i++) {
+    for (size_t i = 0; i < input.size(); i++) {
         total -= f1;
         f1 = f2;
         f2 = f3;
-        f3 = v[i];
+        f3 = input[i];
         total += f3;
-        v[i] = (f1 + f2 + f3) / 3;
+        input[i] = (f1 + f2 + f3) / 3;
     }
 }
 
-inline void DifficultySmooth(vector<float>& v) {
+inline void DifficultySmooth(vector<float>& input) {
     float f1 = 0.f;
     float f2 = 0.f;
     float f3 = 0.f;
     float total = 0.f;
 
-    for (size_t i = 0; i < v.size(); i++) {
+    for (size_t i = 0; i < input.size(); i++) {
         total -= f1;
         f1 = f2;
         f2 = f3;
-        f3 = v[i];
+        f3 = input[i];
         total += f3;
-        v[i] = (f1 + f2 + f3) / 3;
+        input[i] = (f1 + f2 + f3) / 3;
     }
 }
 
-inline void DifficultyMSSmooth(vector<float>& v) {
+inline void DifficultyMSSmooth(vector<float>& input) {
     float f1 = 0.f;
     float f2 = 0.f;
 
-    for (size_t i = 0; i < v.size(); i++) {
+    for (size_t i = 0; i < input.size(); i++) {
         f1 = f2;
-        f2 = v[i];
-        v[i] = (f1 + f2) / 2.f;
+        f2 = input[i];
+        input[i] = (f1 + f2) / 2.f;
     }
 }
 
@@ -625,16 +625,16 @@ void Hand::InitHand(Finger & f1, Finger & f2, float ts) {
     InitPoints(f1, f2);
 }
 
-float Hand::CalcMSEstimate(vector<float>& v) {
-    if (v.empty())
+float Hand::CalcMSEstimate(vector<float>& input) {
+    if (input.empty())
         return 0.f;
 
-    sort(v.begin(), v.end());
+    sort(input.begin(), input.end());
     float m = 0;
-    v[0] *= 1.066f;
-    size_t End = min(v.size(), static_cast<size_t>(6));
+    input[0] *= 1.066f;
+    size_t End = min(input.size(), static_cast<size_t>(6));
     for (size_t i = 0; i < End; i++)
-        m += v[i];
+        m += input[i];
     return 1 / (m / (End)) * 1375;
 }
 
