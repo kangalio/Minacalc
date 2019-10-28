@@ -441,29 +441,29 @@ int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
 void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float ts) {
     numitv = fastwalk(NoteInfo);
 
-    ProcessedFingers l;
-    ProcessedFingers r;
+    ProcessedFingers left_fingers;
+    ProcessedFingers right_fingers;
     for (int i = 0; i < numTracks; i++) {
         if (i <= numTracks / 2 - 1)
-            l.emplace_back(ProcessFinger(NoteInfo, i));
+            left_fingers.emplace_back(ProcessFinger(NoteInfo, i));
         else
-            r.emplace_back(ProcessFinger(NoteInfo, i));
+            right_fingers.emplace_back(ProcessFinger(NoteInfo, i));
     }
 
     left = new Hand;
-    left->InitHand(l[0], l[1], ts);
+    left->InitHand(left_fingers[0], left_fingers[1], ts);
     left->ohjumpscale = OHJumpDownscaler(NoteInfo, 0, 1);
     left->anchorscale = Anchorscaler(NoteInfo, 0, 1);
-    left->rollscale = RollDownscaler(l[0], l[1]);
+    left->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
     left->hsscale = HSDownscaler(NoteInfo);
     left->jumpscale = JumpDownscaler(NoteInfo);
     left->dum = left->ohjumpscale;
 
     right = new Hand;
-    right->InitHand(r[0], r[1], ts);
+    right->InitHand(right_fingers[0], right_fingers[1], ts);
     right->ohjumpscale = OHJumpDownscaler(NoteInfo, 2, 3);
     right->anchorscale = Anchorscaler(NoteInfo, 2, 3);
-    right->rollscale = RollDownscaler(r[0], r[1]);
+    right->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
     right->hsscale = left->hsscale;
     right->jumpscale = left->jumpscale;
     right->dum = right->ohjumpscale;
@@ -475,11 +475,11 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float ts) {
 
     vector<Finger> ltmp;
     vector<Finger> rtmp;
-    l.swap(ltmp);
-    r.swap(rtmp);
+    left_fingers.swap(ltmp);
+    right_fingers.swap(rtmp);
 
-    l.shrink_to_fit();
-    r.shrink_to_fit();
+    left_fingers.shrink_to_fit();
+    right_fingers.shrink_to_fit();
 }
 
 Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
@@ -533,7 +533,7 @@ void Calc::TotalMaxPoints() {
 }
 
 float Calc::Chisel(float pskill, float res, int iter, bool stam, bool jack, bool nps, bool js, bool hs, bool jackstam) {
-    float gotpoints = 0.f;
+    float gotpoints;
     do {
         if (pskill > 100.f)
             return pskill;
@@ -586,7 +586,7 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
         float bb = CalcMSEstimate(f2[i]);
         float ms = max(aa, bb);
         tmpNPS[i] = finalscaler * nps;
-        tmpMS[i] = finalscaler * (ms + ms + ms + ms + ms + nps + nps + nps + nps) / 9.f;
+        tmpMS[i] = finalscaler * (5.f * ms + 4.f * nps) / 9.f;
     }
     if (SmoothDifficulty)
         DifficultyMSSmooth(tmpMS);
