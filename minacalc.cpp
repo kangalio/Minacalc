@@ -158,61 +158,6 @@ float handprop(const vector<NoteInfo>& NoteInfo) {
     return static_cast<float>(hands) / static_cast<float>(taps);
 }
 
-float notcj(const vector<NoteInfo>& NoteInfo) {
-    int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
-
-    int taps = 0;
-    int hands = 0;
-    int lcol = 0;
-    int lnotes = 0;
-    for (size_t r = 0; r < NoteInfo.size(); r++) {
-        int lefty = NoteInfo[r].notes & left ? 1 : 0;
-        int downy = NoteInfo[r].notes & down ? 1 : 0;
-        int upy = NoteInfo[r].notes & up ? 1 : 0;
-        int righty = NoteInfo[r].notes & right ? 1 : 0;
-
-        int notes = lefty + downy + upy + righty;
-        int tcol = 0;
-        if (notes == 1) {
-            if (lefty) tcol = left;
-            if (downy) tcol = down;
-            if (upy) tcol = up;
-            if (righty) tcol = right;
-
-            if (tcol != lcol && (lnotes == 3 || lnotes == 2))
-                taps += 1;
-        }
-
-        if ((notes == 3 || notes == 2) && lnotes == 1)
-        {
-            if (lefty && lcol == left)
-                taps -= 1;
-            if (downy && lcol == down)
-                taps -= 1;
-            if (upy && lcol == up)
-                taps -= 1;
-            if (righty && lcol == right)
-                taps -= 1;
-            taps += 1;
-        }
-
-        taps += notes;
-        if (notes == 3)
-            hands += notes;
-
-        lnotes = notes;
-        if (lefty) lcol = left;
-        if (downy) lcol = down;
-        if (upy) lcol = up;
-        if (righty) lcol = right;
-    }
-
-    return static_cast<float>(hands) / static_cast<float>(taps);
-}
-
 float quadprop(const vector<NoteInfo>& NoteInfo) {
     int left = 1;
     int down = 1 << 1;
