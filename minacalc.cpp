@@ -13,13 +13,6 @@ using namespace std;
 
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
-
-template<typename T, typename U>
-inline U lerp(T x, U l, U h)
-{
-    return static_cast<U>(x * (h - l) + l);
-}
-
 template<typename T, typename U, typename V>
 inline void CalcClamp(T& x, U l, V h) {
     if (x > static_cast<T>(h))
