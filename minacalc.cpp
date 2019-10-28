@@ -57,9 +57,9 @@ inline float downscalebaddies(float& f, float sg) {
     CalcClamp(f, 0.f, 100.f);
     if (sg >= 0.93f)
         return f;
-    float o = f * 1 - sqrt(0.93f - sg);
+    float output = f * 1 - sqrt(0.93f - sg);
     CalcClamp(f, 0.f, 100.f);
-    return o;
+    return output;
 }
 
 // Specifically for pattern modifiers as the neutral value is 1
@@ -123,8 +123,8 @@ inline float AggregateScores(vector<float>& invector, float rating, float res, i
 float normalizer(float x, float y, float z1, float z2) {
     float norm = ((x / y) - 1.f)*z1;
     CalcClamp(norm, 0.f, 1.f);
-    float o = x*z2*norm + x*(1.f - z2);
-    return o;
+    float output = x * z2 * norm + x * (1.f - z2);
+    return output;
 }
 
 float jumpprop(const vector<NoteInfo>& NoteInfo) {
@@ -272,8 +272,8 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
     float jumpthrill = 1.625f - jprop - hprop;
     CalcClamp(jumpthrill, 0.85f, 1.f);
 
-    vector<float> o;
-    o.reserve(8);
+    vector<float> output;
+    output.reserve(8);
 
     InitializeHands(NoteInfo, timingscale);
     TotalMaxPoints();
@@ -300,132 +300,132 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
     else
         stam = Chisel(tech - 0.1f, 2.56f, 1, true, false, false, false, false, false);
 
-    o.emplace_back(0.f); //temp
-    o.emplace_back(downscalebaddies(stream, Scoregoal));
+    output.emplace_back(0.f); //temp
+    output.emplace_back(downscalebaddies(stream, Scoregoal));
 
     js = normalizer(js, stream, 7.25f, 0.25f);
-    o.emplace_back(downscalebaddies(js, Scoregoal));
+    output.emplace_back(downscalebaddies(js, Scoregoal));
     hs = normalizer(hs, stream, 6.5f, 0.3f);
     hs = normalizer(hs, js, 11.5f, 0.15f);
-    o.emplace_back(downscalebaddies(hs, Scoregoal));
+    output.emplace_back(downscalebaddies(hs, Scoregoal));
 
     float stambase = max(max(stream, tech* 0.96f), max(js, hs));
     if (stambase == stream)
         stambase *= 0.975f;
 
     stam = normalizer(stam, stambase, 7.75f, 0.2f);
-    o.emplace_back(downscalebaddies(stam, Scoregoal));
+    output.emplace_back(downscalebaddies(stam, Scoregoal));
 
-    o.emplace_back(downscalebaddies(jack, Scoregoal));
+    output.emplace_back(downscalebaddies(jack, Scoregoal));
     jackstam = normalizer(jackstam, jack, 5.5f, 0.25f);
-    o.emplace_back(downscalebaddies(jackstam, Scoregoal));
+    output.emplace_back(downscalebaddies(jackstam, Scoregoal));
     float technorm = max(max(stream, js), hs);
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
-    o.emplace_back(downscalebaddies(tech, Scoregoal));
+    output.emplace_back(downscalebaddies(tech, Scoregoal));
 
     float definitelycj = qprop + hprop + jprop + 0.2f;
     CalcClamp(definitelycj, 0.5f, 1.f);
 
     // chordjack
-    float cj = o[3];
+    float cj = output[3];
 
-    o[1] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler;
-    o[2] *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
-    o[3] *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjampdownscaler * lotquaddownscaler;
-    o[4] *= shortstamdownscaler * 0.985f * lotquaddownscaler;
+    output[1] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler;
+    output[2] *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
+    output[3] *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjampdownscaler * lotquaddownscaler;
+    output[4] *= shortstamdownscaler * 0.985f * lotquaddownscaler;
 
-    cj = normalizer(cj, o[3], 5.5f, 0.3f) * definitelycj * 1.025f;
+    cj = normalizer(cj, output[3], 5.5f, 0.3f) * definitelycj * 1.025f;
 
-    bool iscj = cj > o[5];
+    bool iscj = cj > output[5];
     if (iscj)
-        o[6] = cj;
+        output[6] = cj;
 
-    o[7] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler * 1.01f;
+    output[7] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler * 1.01f;
 
-    float stamclamp = max(max(o[1], o[5]), max(o[2], o[3]));
-    CalcClamp(o[4], 1.f, stamclamp * 1.1f);
+    float stamclamp = max(max(output[1], output[5]), max(output[2], output[3]));
+    CalcClamp(output[4], 1.f, stamclamp * 1.1f);
 
     dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
     float stupidvalue = 1.f - (dumbvalue - 2.55f);
     CalcClamp(stupidvalue, 0.85f, 1.f);
-    o[7] *= stupidvalue;
+    output[7] *= stupidvalue;
 
     if (stupidvalue <= 0.95f) {
-        o[5] *= 1.f + (1.f - sqrt(stupidvalue));
+        output[5] *= 1.f + (1.f - sqrt(stupidvalue));
     }
 
-    float skadoot = max(o[3], o[2]);
-    if (o[1] < skadoot)
-        o[1] -= sqrt(skadoot - o[1]);
+    float skadoot = max(output[3], output[2]);
+    if (output[1] < skadoot)
+        output[1] -= sqrt(skadoot - output[1]);
 
-    float overall = AggregateScores(o, 0.f, 10.24f, 1);
-    o[0] = downscalebaddies(overall, Scoregoal);
+    float overall = AggregateScores(output, 0.f, 10.24f, 1);
+    output[0] = downscalebaddies(overall, Scoregoal);
 
-    float aDvg = mean(o)*1.2f;
-    for (size_t i = 0; i < o.size(); i++) {
+    float aDvg = mean(output) * 1.2f;
+    for (size_t i = 0; i < output.size(); i++) {
         if (i == 1 || i == 2 || i == 7) {
-            CalcClamp(o[i], 0.f, aDvg * 1.0416f);
-            o[i] *= grindscaler * grindscaler2;
+            CalcClamp(output[i], 0.f, aDvg * 1.0416f);
+            output[i] *= grindscaler * grindscaler2;
         } else {
-            CalcClamp(o[i], 0.f, aDvg);
-            o[i] *= grindscaler * grindscaler2;
+            CalcClamp(output[i], 0.f, aDvg);
+            output[i] *= grindscaler * grindscaler2;
         }
-        o[i] = downscalebaddies(o[i], Scoregoal);
+        output[i] = downscalebaddies(output[i], Scoregoal);
     }
 
-    o[2] *= jumpthrill;
-    o[3] *= jumpthrill;
-    o[4] *= sqrt(jumpthrill) * 0.996f;
-    o[7] *= sqrt(jumpthrill);
+    output[2] *= jumpthrill;
+    output[3] *= jumpthrill;
+    output[4] *= sqrt(jumpthrill) * 0.996f;
+    output[7] *= sqrt(jumpthrill);
 
     float highest = 0.f;
-    for (auto v : o) {
+    for (auto v : output) {
         if (v > highest)
             highest = v;
     }
-    o[0] = AggregateScores(o, 0.f, 10.24f, 1);;
+    output[0] = AggregateScores(output, 0.f, 10.24f, 1);;
 
     float dating = 0.5f + (highest / 100.f);
     CalcClamp(dating, 0.f, 0.9f);
 
     if (Scoregoal < dating) {
-        for (size_t i = 0; i < o.size(); i++) {
-            o[i] = 0.f;
+        for (size_t i = 0; i < output.size(); i++) {
+            output[i] = 0.f;
         }
     }
 
-    o[5] *= 1.0075f;
+    output[5] *= 1.0075f;
 
-    float hsnottech = o[7] - o[3];
-    float jsnottech = o[7] - o[2];
+    float hsnottech = output[7] - output[3];
+    float jsnottech = output[7] - output[2];
 
-    if (highest == o[7]) {
+    if (highest == output[7]) {
         hsnottech = 4.5f - hsnottech;
         CalcClamp(hsnottech, 0.f, 4.5f);
-        o[7] -= hsnottech;
+        output[7] -= hsnottech;
 
         jsnottech = 4.5f - jsnottech;
         CalcClamp(jsnottech, 0.f, 4.5f);
-        o[7] -= jsnottech;
+        output[7] -= jsnottech;
     }
 
-    o[7] *= 1.025f;
+    output[7] *= 1.025f;
     if (!iscj)
-        o[6] *= 0.9f;
+        output[6] *= 0.9f;
 
     highest = 0.f;
-    o[0] = 0.f;
-    for (auto v : o) {
+    output[0] = 0.f;
+    for (auto v : output) {
         if (v > highest)
             highest = v;
     }
-    o[0] = highest;
-    return o;
+    output[0] = highest;
+    return output;
 }
 
 // ugly jack stuff
 vector<float> Calc::JackStamAdjust(vector<float>& j, float x, bool jackstam) {
-    vector<float> o(j.size());
+    vector<float> output(j.size());
     float floor = 1.f;
     float mod = 1.f;
     float ceil = 1.15f;
@@ -447,24 +447,24 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x, bool jackstam) {
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
         CalcClamp(mod, 1.f, ceil*sqrt(floor));
-        o[i] = j[i] * mod;
+        output[i] = j[i] * mod;
     }
-    return o;
+    return output;
 }
 
 float Calc::JackLoss(vector<float>& j, float x, bool jackstam) {
     const vector<float>& v = JackStamAdjust(j, x, jackstam);
-    float o = 0.f;
+    float output = 0.f;
     for (size_t i = 0; i < v.size(); i++) {
         if (x < v[i])
-            o += 7.f - (7.f * pow(x / (v[i] * 0.96f), 1.5f));
+            output += 7.f - (7.f * pow(x / (v[i] * 0.96f), 1.5f));
     }
-    CalcClamp(o, 0.f, 10000.f);
-    return o;
+    CalcClamp(output, 0.f, 10000.f);
+    return output;
 }
 
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
-    vector<float> o;
+    vector<float> output;
     float last = -5.f;
     float mats1 = 0.f;
     float mats2 = 0.f;
@@ -484,10 +484,10 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
             CalcClamp(timestamp, 25.f, mats3*1.4f);
             float tmp = 1 / timestamp * 2800.f;
             CalcClamp(tmp, 0.f, 50.f);
-            o.emplace_back(tmp);
+            output.emplace_back(tmp);
         }
     }
-    return o;
+    return output;
 }
 
 int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
@@ -664,7 +664,7 @@ void Hand::InitPoints(Finger& f1, Finger& f2) {
 }
 
 vector<float> Hand::StamAdjust(float x, vector<float> diff) {
-    vector<float> o(diff.size());
+    vector<float> output(diff.size());
     float floor = 1.f;			// stamina multiplier min (increases as chart advances)
     float mod = 1.f;			// mutliplier
 
@@ -679,9 +679,9 @@ vector<float> Hand::StamAdjust(float x, vector<float> diff) {
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
         CalcClamp(mod, floor, ceil);
-        o[i] = diff[i] * mod;
+        output[i] = diff[i] * mod;
     }
-    return o;
+    return output;
 }
 
 float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
@@ -705,26 +705,26 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 
     const vector<float>& v = stam ? StamAdjust(x, diff) : diff;
     //dum = v;
-    float o = 0.f;
+    float output = 0.f;
     for (size_t i = 0; i < v.size(); i++) {
         if (x > v[i])
-            o += v_itvpoints[i];
+            output += v_itvpoints[i];
         else
-            o += v_itvpoints[i] * pow(x / v[i], 1.8f);
+            output += v_itvpoints[i] * pow(x / v[i], 1.8f);
     }
-    return o;
+    return output;
 }
 
 
 // pattern modifiers
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int t1, int t2) {
-    vector<float> o(nervIntervals.size());
+    vector<float> output(nervIntervals.size());
     int firstNote = 1 << t1;
     int secondNote = 1 << t2;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
-            o[i] = 1.f;
+            output[i] = 1.f;
         else {
             int taps = 0;
             int jumptaps = 0;
@@ -738,27 +738,27 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int t1, i
                     }
                 }
             }
-            o[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
+            output[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
 
             if (logpatterns)
-                cout << "ohj " << o[i] << endl;
+                cout << "ohj " << output[i] << endl;
         }
     }
 
     if (SmoothPatterns)
-        PatternSmooth(o);
-    return o;
+        PatternSmooth(output);
+    return output;
 }
 
 // pattern modifiers
 vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t2) {
-    vector<float> o(nervIntervals.size());
+    vector<float> output(nervIntervals.size());
     int firstNote = 1 << t1;
     int secondNote = 1 << t2;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
-            o[i] = 1.f;
+            output[i] = 1.f;
         else {
             int lcol = 0;
             int rcol = 0;
@@ -770,27 +770,27 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t
                     ++rcol;
             }
             bool anyzero = lcol == 0 || rcol == 0;
-            o[i] = anyzero ? 1.f : sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f));
+            output[i] = anyzero ? 1.f : sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f));
 
             float stupidthing = (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
             dumbvalue += stupidthing;
             ++dumbcounter;
 
-            CalcClamp(o[i], 0.8f, 1.05f);
+            CalcClamp(output[i], 0.8f, 1.05f);
 
             if (logpatterns)
-                cout << "an " << o[i] << endl;
+                cout << "an " << output[i] << endl;
         }
     }
 
     if (SmoothPatterns)
-        PatternSmooth(o);
-    return o;
+        PatternSmooth(output);
+    return output;
 }
 
 
 vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
-    vector<float> o(nervIntervals.size());
+    vector<float> output(nervIntervals.size());
     int left = 1;
     int down = 1 << 1;
     int up = 1 << 2;
@@ -798,7 +798,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
-            o[i] = 1.f;
+            output[i] = 1.f;
         else {
             int taps = 0;
             int handtaps = 0;
@@ -809,20 +809,20 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
                 if (notes == 3)
                     handtaps += notes;
             }
-            o[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps) / 3.f))) : 1.f;
+            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps) / 3.f))) : 1.f;
 
             if (logpatterns)
-                cout << "hs " << o[i] << endl;
+                cout << "hs " << output[i] << endl;
         }
     }
 
     if (SmoothPatterns)
-        PatternSmooth(o);
-    return o;
+        PatternSmooth(output);
+    return output;
 }
 
 vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
-    vector<float> o(nervIntervals.size());
+    vector<float> output(nervIntervals.size());
     int left = 1;
     int down = 1 << 1;
     int up = 1 << 2;
@@ -830,7 +830,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
-            o[i] = 1.f;
+            output[i] = 1.f;
         else {
             int taps = 0;
             int jamps = 0;
@@ -841,23 +841,23 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
                 if (notes == 2)
                     jamps += notes;
             }
-            o[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jamps) / static_cast<float>(taps) / 6.f))) : 1.f;
+            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jamps) / static_cast<float>(taps) / 6.f))) : 1.f;
 
             if (logpatterns)
-                cout << "ju " << o[i] << endl;
+                cout << "ju " << output[i] << endl;
         }
     }
     if (SmoothPatterns)
-        PatternSmooth(o);
-    return o;
+        PatternSmooth(output);
+    return output;
 }
 
 
 vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
-    vector<float> o(f1.size());
+    vector<float> output(f1.size());
     for (size_t i = 0; i < f1.size(); i++) {
         if (f1[i].empty() && f2[i].empty())
-            o[i] = 1.f;
+            output[i] = 1.f;
         else {
             vector<float> cvint;
             for (size_t ii = 0; ii < f1[i].size(); ii++)
@@ -872,26 +872,26 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
 
 
             if (cvint.size() == 1) {
-                o[i] = 1.f;
+                output[i] = 1.f;
                 continue;
             }
 
             float dacv = cv(cvint);
             if (dacv >= 0.15)
-                o[i] = sqrt(sqrt(0.85f + dacv));
+                output[i] = sqrt(sqrt(0.85f + dacv));
             else
-                o[i] = pow(0.85f + dacv, 3);
-            CalcClamp(o[i], 0.f, 1.075f);
+                output[i] = pow(0.85f + dacv, 3);
+            CalcClamp(output[i], 0.f, 1.075f);
 
             if (logpatterns)
-                cout << "ro " << o[i] << endl;
+                cout << "ro " << output[i] << endl;
         }
     }
 
     if (SmoothPatterns)
-        PatternSmooth(o);
+        PatternSmooth(output);
 
-    return o;
+    return output;
 }
 
 
@@ -961,12 +961,12 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
                      bool negbpms,
                      vector<vector<float>>& dum)
 {
-    vector<float> o;
+    vector<float> output;
 
     // Return 0 for main ouput if the file is not 4k
     if (numTracks != 4) {
-        o.emplace_back(0.f);
-        return (o);
+        output.emplace_back(0.f);
+        return (output);
     }
 
     unique_ptr<Calc> doot = make_unique<Calc>();
@@ -974,34 +974,34 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
     CalcClamp(
             goal, 0.f, 0.96f); // cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    o = doot->CalcMain(NoteInfo, timingscale);
+    output = doot->CalcMain(NoteInfo, timingscale);
 
     dum.push_back(doot->left->dum);
     dum.push_back(doot->right->dum);
     doot->Purge();
 
-    return o;
+    return output;
 }
 
 // Function to generate SSR rating
 vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float musicrate, float goal, float timingscale, bool negbpms) {
-    vector<float> o;
+    vector<float> output;
 
     // Return 0 for main ouput if the file is not 4k
     if (numTracks != 4) {
-        o.emplace_back(0.f);
-        return(o);
+        output.emplace_back(0.f);
+        return(output);
     }
 
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
     CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    o = doot->CalcMain(NoteInfo, timingscale);
+    output = doot->CalcMain(NoteInfo, timingscale);
 
     doot->Purge();
 
-    return o;
+    return output;
 }
 
 // Wrap difficulty calculation for all standard rates
@@ -1021,11 +1021,11 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float goal, f
     }
     else
     {
-        vector<float> o{ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+        vector<float> output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
 
         for (int i = 7; i < rateCount; i++)
         {
-            allrates.emplace_back(o);
+            allrates.emplace_back(output);
         }
     }
     return allrates;
