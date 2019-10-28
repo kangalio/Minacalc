@@ -7,7 +7,7 @@ int main() {
     sm_file.open("../chart.sm");
     if (sm_file.is_open()) {
         std::vector<NoteInfo> jeff = load_from_file(sm_file);
-        std::vector<float> x = MinaSDCalc(jeff, 4, 1.f, 0.93f, 1.f);
+        std::vector<float> x = MinaSDCalc(jeff, 1.f, 0.93f);
         std::cout << "Overall: " << x[0] << std::endl;
         std::cout << "Stream: " << x[1] << std::endl;
         std::cout << "JumpStream: " << x[2] << std::endl;

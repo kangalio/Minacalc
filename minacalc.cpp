@@ -177,7 +177,7 @@ float quadprop(const vector<NoteInfo>& NoteInfo) {
     return static_cast<float>(quads) / static_cast<float>(taps);
 }
 
-vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale) {
+vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     //LOG->Trace("%f", etaner.back());
     float grindscaler = 0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f);
     CalcClamp(grindscaler, 0.93f, 1.f);
@@ -213,7 +213,7 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale
     vector<float> output;
     output.reserve(8);
 
-    InitializeHands(NoteInfo, timingscale);
+    InitializeHands(NoteInfo);
     TotalMaxPoints();
     float stream = Chisel(0.1f, 10.24f, 1, false, false, true, false, false, false);
     float js = Chisel(0.1f, 10.24f, 1, false, false, true, true, false, false);
@@ -438,7 +438,7 @@ int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
 }
 
 
-void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float ts) {
+void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     numitv = fastwalk(NoteInfo);
 
     ProcessedFingers left_fingers;
@@ -451,7 +451,7 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float ts) {
     }
 
     left = new Hand;
-    left->InitHand(left_fingers[0], left_fingers[1], ts);
+    left->InitHand(left_fingers[0], left_fingers[1]);
     left->ohjumpscale = OHJumpDownscaler(NoteInfo, 0, 1);
     left->anchorscale = Anchorscaler(NoteInfo, 0, 1);
     left->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
@@ -460,7 +460,7 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float ts) {
     left->dum = left->ohjumpscale;
 
     right = new Hand;
-    right->InitHand(right_fingers[0], right_fingers[1], ts);
+    right->InitHand(right_fingers[0], right_fingers[1]);
     right->ohjumpscale = OHJumpDownscaler(NoteInfo, 2, 3);
     right->anchorscale = Anchorscaler(NoteInfo, 2, 3);
     right->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
@@ -557,8 +557,7 @@ float Calc::Chisel(float pskill, float res, int iter, bool stam, bool jack, bool
 
 
 // Hand stuff
-void Hand::InitHand(Finger & f1, Finger & f2, float ts) {
-    SetTimingScale(ts);
+void Hand::InitHand(Finger & f1, Finger & f2) {
     InitDiff(f1, f2);
     InitPoints(f1, f2);
 }
@@ -895,7 +894,6 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
                      int numTracks,
                      float musicrate,
                      float goal,
-                     float timingscale,
                      bool negbpms,
                      vector<vector<float>>& dum)
 {
@@ -912,7 +910,7 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
     CalcClamp(
             goal, 0.f, 0.96f); // cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    output = doot->CalcMain(NoteInfo, timingscale);
+    output = doot->CalcMain(NoteInfo);
 
     dum.push_back(doot->left->dum);
     dum.push_back(doot->right->dum);
@@ -922,20 +920,13 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
 }
 
 // Function to generate SSR rating
-vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float musicrate, float goal, float timingscale) {
+vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     vector<float> output;
-
-    // Return 0 for main ouput if the file is not 4k
-    if (numTracks != 4) {
-        output.emplace_back(0.f);
-        return(output);
-    }
-
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
     CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    output = doot->CalcMain(NoteInfo, timingscale);
+    output = doot->CalcMain(NoteInfo);
 
     doot->Purge();
 
@@ -943,17 +934,17 @@ vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float 
 }
 
 // Wrap difficulty calculation for all standard rates
-MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo, int numTracks, float goal, float timingscale, bool negbpms) {
+MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
 
     MinaSD allrates;
 
     int rateCount = 21;
 
-    if (!negbpms && !NoteInfo.empty())
+    if (!NoteInfo.empty())
     {
         for (int i = 7; i < rateCount; i++)
         {
-            auto tempVal = MinaSDCalc(NoteInfo, numTracks, i / 10.f, 0.93f, 1.f);
+            auto tempVal = MinaSDCalc(NoteInfo,i / 10.f, 0.93f);
             allrates.emplace_back(tempVal);
         }
     }

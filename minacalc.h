@@ -39,7 +39,7 @@ public:
     float CalcMSEstimate(vector<float>& input);
 
     // Wraps the three prepatory functions below
-    void InitHand(Finger& f1, Finger& f2, float ts);
+    void InitHand(Finger& f1, Finger& f2);
 
     /*	Averages nps and ms estimates for difficulty to get a rough initial
     value. This is relatively robust as patterns that get overrated by nps
@@ -52,7 +52,7 @@ public:
     void InitPoints(Finger& f1, Finger& f2);
 
     // Self explanatory
-    void SetTimingScale(float ts) { timingscale = ts; }
+    void SetTimingScale(float ts) { }
 
     /*	The stamina model works by asserting a minimum difficulty relative to
     the supplied player skill level for which the player's stamina begins to
@@ -80,7 +80,6 @@ private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
 
-    float timingscale; // Timingscale for use in the point proportion function
     float finalscaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
                         1.025; // multiplier to standardize baselines
 
@@ -99,7 +98,7 @@ public:
     hand objects and then runs the chisel function under varying circumstances
     to estimate difficulty for each different skillset. Currently only
     overall/stamina are being produced. */
-    vector<float> CalcMain(const vector<NoteInfo>& NoteInfo, float timingscale);
+    vector<float> CalcMain(const vector<NoteInfo>& NoteInfo);
 
     // redo these asap
     vector<float> JackStamAdjust(vector<float>& j, float x, bool jackstam);
@@ -113,7 +112,7 @@ public:
     before passing
     the results to the hand initialization functions. Also passes the input
     timingscale value. */
-    void InitializeHands(const vector<NoteInfo>& NoteInfo, float ts);
+    void InitializeHands(const vector<NoteInfo>& NoteInfo);
 
     /*	Slices the track into predefined intervals of time. All taps within each
     interval have their ms values from the last note in the same column
@@ -194,15 +193,11 @@ MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
 
 MINACALC_API vector<float>
 MinaSDCalc(const vector<NoteInfo>& NoteInfo,
-           int numTracks,
            float musicrate,
-           float goal,
-           float timingscale);
+           float goal);
 MINACALC_API MinaSD
 MinaSDCalc(const vector<NoteInfo>& NoteInfo,
-           int numTracks,
            float goal,
-           float timingscale,
            bool negbpms);
 MINACALC_API int
 GetCalcVersion();
