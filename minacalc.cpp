@@ -89,7 +89,7 @@ inline void DifficultySmooth(vector<float>& input) {
 }
 
 inline void DifficultyMSSmooth(vector<float>& input) {
-    float f1 = 0.f;
+    float f1;
     float f2 = 0.f;
 
     for (size_t i = 0; i < input.size(); i++) {
@@ -404,10 +404,10 @@ float Calc::JackLoss(vector<float>& j, float x, bool jackstam) {
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
     vector<float> output;
     float last = -5.f;
-    float mats1 = 0.f;
+    float mats1;
     float mats2 = 0.f;
     float mats3 = 0.f;
-    float timestamp = 0.f;
+    float timestamp;
     int track = 1 << t;
 
     for (size_t i = 0; i < NoteInfo.size(); i++) {
@@ -606,7 +606,7 @@ vector<float> Hand::StamAdjust(float x, vector<float> diff) {
     float floor = 1.f;			// stamina multiplier min (increases as chart advances)
     float mod = 1.f;			// mutliplier
 
-    float avs1 = 0.f;
+    float avs1;
     float avs2 = 0.f;
 
     for (size_t i = 0; i < diff.size(); i++) {
