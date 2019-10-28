@@ -38,6 +38,9 @@ SMNotes load_from_file(ifstream& file) {
             if (it == '1' || it == '2') {
                 notes += stupidname;
             }
+            if (stupidname == 8) {
+                break;
+            }
             stupidname *= 2;
         }
         size += 1.f;
