@@ -171,7 +171,7 @@ private:
     const bool SmoothPatterns =
             true; // Do we moving average the pattern modifier intervals?
     const float IntervalSpan = 0.5f; // Intervals of time we slice the chart at
-    const bool logpatterns = true;
+    const bool logpatterns = false;
 
     float dumbvalue = 1.f;
     int dumbcounter = 0;
