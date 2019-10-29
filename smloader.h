@@ -13,6 +13,13 @@ using std::ifstream;
 
 typedef std::vector<NoteInfo> SMNotes;
 
+struct BPM {
+    float beat;
+    float bpm;
+};
+
+typedef std::vector<BPM> BPMs;
+
 SMNotes load_from_file(ifstream& sm_file);
 
 #endif //MINACALC_SMLOADER_H

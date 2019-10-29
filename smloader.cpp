@@ -9,12 +9,14 @@
 using std::stringstream;
 using std::string;
 SMNotes parse_main_block(stringstream&);
+BPMs parse_bpms_block(stringstream&);
 
 SMNotes load_from_file(ifstream& file) {
     stringstream sm_buffer;
     sm_buffer << file.rdbuf();
     string sm_text = sm_buffer.str();
     SMNotes raw_block = std::vector<NoteInfo>();
+    BPMs bpms = std::vector<BPM>();
     while (!sm_text.empty()) {
         size_t cool = sm_text.find('#');
         if (cool == string::npos)
@@ -28,8 +30,18 @@ SMNotes load_from_file(ifstream& file) {
                 sm_text = sm_text.substr(cool+1);
             }
             stringstream notes_block;
-            notes_block << sm_text.substr(sm_text.find('\n')+1, sm_text.find(';'));
+            cool = sm_text.find(';');
+            notes_block << sm_text.substr(sm_text.find('\n')+1, cool);
             raw_block = parse_main_block(notes_block);
+            sm_text = sm_text.substr(cool+1);
+        } else if (sm_text.substr(0,4) == "BPMS") {
+            cool = sm_text.find(':');
+            sm_text = sm_text.substr(cool+1);
+            cool = sm_text.find(';');
+            stringstream bpms_block;
+            bpms_block << sm_text.substr(0, cool);
+            bpms = parse_bpms_block(bpms_block);
+            sm_text = sm_text.substr(cool+1);
         }
     }
     return raw_block;
@@ -81,4 +93,16 @@ SMNotes parse_main_block(stringstream& sm_text) {
     measure.clear();
 
     return output;
+}
+
+BPMs parse_bpms_block(stringstream& bpms_block) {
+    float next_time;
+    float next_bpm;
+    BPMs bpm_list = std::vector<BPM>();
+    while (bpms_block.rdbuf()->in_avail() && (bpms_block >> next_time) && (bpms_block.get() == '=') && (bpms_block >> next_bpm)) {
+        bpm_list.push_back(BPM{next_time, next_bpm});
+        bpms_block.get();
+        bpms_block.get();
+    }
+    return bpm_list;
 }
