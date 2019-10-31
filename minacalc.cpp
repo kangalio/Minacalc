@@ -273,9 +273,10 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     cj = normalizer(cj, output[3], 5.5f, 0.3f) * definitelycj * 1.025f;
 
-    bool iscj = cj > output[5];
-    if (iscj)
+    if (cj > output[5])
         output[6] = cj;
+    else
+        output[6] *= 0.9f;
 
     output[7] *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
@@ -347,8 +348,6 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     }
 
     output[7] *= 1.025f;
-    if (!iscj)
-        output[6] *= 0.9f;
 
     highest = 0.f;
     output[0] = 0.f;
