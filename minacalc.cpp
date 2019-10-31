@@ -30,20 +30,14 @@ inline float mean(vector<float>& input) {
     return sum / input.size();
 }
 
-// Coefficient of variance
+// Coefficient of variation
 inline float cv(vector<float> &input) {
-    float sum = 0.f;
-    float mean;
     float sd = 0.f;
-
+    float average = mean(input);
     for (float i : input)
-        sum += i;
+        sd += (i - average)*(i - average);
 
-    mean = sum / input.size();
-    for (float i : input)
-        sd += pow(i - mean, 2);
-
-    return sqrt(sd / input.size()) / mean;
+    return sqrt(sd / input.size()) / average;
 }
 
 inline float downscale_low_accuracy_scores(float& f, float sg) {
@@ -351,15 +345,12 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     difficulty.jack *= 1.0075f;
 
-    float hsnottech = difficulty.technical - difficulty.handstream;
-    float jsnottech = difficulty.technical - difficulty.jumpstream;
-
     if (highest == difficulty.technical) {
-        hsnottech = 4.5f - hsnottech;
+        float hsnottech = 4.5f - difficulty.technical + difficulty.handstream;
         CalcClamp(hsnottech, 0.f, 4.5f);
         difficulty.technical -= hsnottech;
 
-        jsnottech = 4.5f - jsnottech;
+        float jsnottech = 4.5f - difficulty.technical + difficulty.jumpstream;
         CalcClamp(jsnottech, 0.f, 4.5f);
         difficulty.technical -= jsnottech;
     }
