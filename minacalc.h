@@ -51,9 +51,6 @@ public:
     // Totals up the points available for each interval
     void InitPoints(Finger& f1, Finger& f2);
 
-    // Self explanatory
-    void SetTimingScale(float ts) { }
-
     /*	The stamina model works by asserting a minimum difficulty relative to
     the supplied player skill level for which the player's stamina begins to
     wane. Experience in both gameplay and algorithm testing has shown the
@@ -181,15 +178,6 @@ private:
     JackSeq j2;
     JackSeq j3;
 };
-
-MINACALC_API vector<float>
-MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
-                     int numTracks,
-                     float musicrate,
-                     float goal,
-                     float timingscale,
-                     bool negbpms,
-                     vector<vector<float>>& dum);
 
 MINACALC_API vector<float>
 MinaSDCalc(const vector<NoteInfo>& NoteInfo,

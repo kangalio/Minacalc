@@ -885,36 +885,6 @@ void Calc::Purge() {
     SAFE_DELETE(right);
 }
 
-vector<float>
-MinaSDCalcDumbThings(const vector<NoteInfo>& NoteInfo,
-                     int numTracks,
-                     float musicrate,
-                     float goal,
-                     bool negbpms,
-                     vector<vector<float>>& dum)
-{
-    vector<float> output;
-
-    // Return 0 for main ouput if the file is not 4k
-    if (numTracks != 4) {
-        output.emplace_back(0.f);
-        return (output);
-    }
-
-    unique_ptr<Calc> doot = make_unique<Calc>();
-    doot->MusicRate = musicrate;
-    CalcClamp(
-            goal, 0.f, 0.96f); // cap SSR at 96% so things don't get out of hand
-    doot->Scoregoal = goal;
-    output = doot->CalcMain(NoteInfo);
-
-    dum.push_back(doot->left->dum);
-    dum.push_back(doot->right->dum);
-    doot->Purge();
-
-    return output;
-}
-
 // Function to generate SSR rating
 vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     vector<float> output;
