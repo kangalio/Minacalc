@@ -113,10 +113,26 @@ BPMs parse_bpms_block(stringstream& bpms_block) {
     float next_time;
     float next_bpm;
     BPMs bpm_list = std::vector<BPM>();
-    while (bpms_block.rdbuf()->in_avail() && (bpms_block >> next_time) && (bpms_block.get() == '=') && (bpms_block >> next_bpm)) {
+    while (bpms_block.rdbuf()->in_avail()) {
+        while (!(bpms_block >> next_time)) {
+            if (!bpms_block.rdbuf()->in_avail())
+                break;
+            bpms_block.get();
+        }
+        while (bpms_block.get() != '=') {
+            if (!bpms_block.rdbuf()->in_avail())
+                break;
+        }
+        while (!(bpms_block >> next_bpm)) {
+            if (!bpms_block.rdbuf()->in_avail())
+                break;
+            bpms_block.get();
+        }
+        while (bpms_block.get() != ',') {
+            if (!bpms_block.rdbuf()->in_avail())
+                break;
+        }
         bpm_list.push_back(BPM{next_time / 4.f, next_bpm});
-        bpms_block.get();
-        bpms_block.get();
     }
     return bpm_list;
 }
