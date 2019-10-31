@@ -443,8 +443,8 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
 
     ProcessedFingers left_fingers;
     ProcessedFingers right_fingers;
-    for (int i = 0; i < numTracks; i++) {
-        if (i <= numTracks / 2 - 1)
+    for (int i = 0; i < 4; i++) {
+        if (i < 2)
             left_fingers.emplace_back(ProcessFinger(NoteInfo, i));
         else
             right_fingers.emplace_back(ProcessFinger(NoteInfo, i));

@@ -117,10 +117,6 @@ public:
     in the track). */
     Finger ProcessFinger(const vector<NoteInfo>& NoteInfo, int t);
 
-    // How many buttons do you press for this chart (currently hardcoded,
-    // clearly)
-    int numTracks = 4;
-
     // Derivative calc params
     float MusicRate = 1.f;
     float MaxPoints = 0.f; // Total points achievable in the file
