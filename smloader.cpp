@@ -56,7 +56,6 @@ SMNotes load_from_file(ifstream& file) {
             next_bpm_index += 1;
         }
         timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm + 0.108f;
-        std::cout << timestamp.notes << " " << timestamp.rowTime << " " << last_bpm << std::endl;
     }
     return raw_block;
 }
