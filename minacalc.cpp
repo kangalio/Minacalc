@@ -92,10 +92,10 @@ inline void DifficultyMSSmooth(vector<float>& input) {
     float f1;
     float f2 = 0.f;
 
-    for (size_t i = 0; i < input.size(); i++) {
+    for (float & i : input) {
         f1 = f2;
-        f2 = input[i];
-        input[i] = (f1 + f2) / 2.f;
+        f2 = i;
+        i = (f1 + f2) / 2.f;
     }
 }
 
@@ -104,8 +104,8 @@ inline float AggregateScores(vector<float>& invector, float rating, float res, i
     do {
         rating += res;
         sum = 0.0f;
-        for (int i = 0; i < static_cast<int>(invector.size()); i++) {
-            sum += 2.f / erfc(0.5f*(invector[i] - rating)) - 1.f;
+        for (float i : invector) {
+            sum += 2.f / erfc(0.5f*(i - rating)) - 1.f;
         }
     } while (3 < sum);
     if (iter == 11)
@@ -129,8 +129,8 @@ float jumpprop(const vector<NoteInfo>& NoteInfo) {
     int taps = 0;
     int jamps = 0;
 
-    for (size_t r = 0; r < NoteInfo.size(); r++) {
-        int notes = (NoteInfo[r].notes & left ? 1 : 0) + (NoteInfo[r].notes & down ? 1 : 0) + (NoteInfo[r].notes & up ? 1 : 0) + (NoteInfo[r].notes & right ? 1 : 0);
+    for (auto r : NoteInfo) {
+        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
         taps += notes;
         if (notes == 2)
             jamps += notes;
@@ -148,8 +148,8 @@ float handprop(const vector<NoteInfo>& NoteInfo) {
     int taps = 0;
     int hands = 0;
 
-    for (size_t r = 0; r < NoteInfo.size(); r++) {
-        int notes = (NoteInfo[r].notes & left ? 1 : 0) + (NoteInfo[r].notes & down ? 1 : 0) + (NoteInfo[r].notes & up ? 1 : 0) + (NoteInfo[r].notes & right ? 1 : 0);
+    for (auto r : NoteInfo) {
+        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
         taps += notes;
         if (notes == 3)
             hands += notes;
@@ -167,8 +167,8 @@ float quadprop(const vector<NoteInfo>& NoteInfo) {
     int taps = 0;
     int quads = 0;
 
-    for (size_t r = 0; r < NoteInfo.size(); r++) {
-        int notes = (NoteInfo[r].notes & left ? 1 : 0) + (NoteInfo[r].notes & down ? 1 : 0) + (NoteInfo[r].notes & up ? 1 : 0) + (NoteInfo[r].notes & right ? 1 : 0);
+    for (auto r : NoteInfo) {
+        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
         taps += notes;
         if (notes == 4)
             quads += notes;
@@ -327,8 +327,8 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     CalcClamp(dating, 0.f, 0.9f);
 
     if (Scoregoal < dating) {
-        for (size_t i = 0; i < output.size(); i++) {
-            output[i] = 0.f;
+        for (float & i : output) {
+            i = 0.f;
         }
     }
 
@@ -393,9 +393,9 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x, bool jackstam) {
 float Calc::JackLoss(vector<float>& j, float x, bool jackstam) {
     const vector<float>& v = JackStamAdjust(j, x, jackstam);
     float output = 0.f;
-    for (size_t i = 0; i < v.size(); i++) {
-        if (x < v[i])
-            output += 7.f - (7.f * pow(x / (v[i] * 0.96f), 1.5f));
+    for (float i : v) {
+        if (x < i)
+            output += 7.f - (7.f * pow(x / (i * 0.96f), 1.5f));
     }
     CalcClamp(output, 0.f, 10000.f);
     return output;
@@ -410,9 +410,9 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
     float timestamp;
     int track = 1 << t;
 
-    for (size_t i = 0; i < NoteInfo.size(); i++) {
-        float scaledtime = NoteInfo[i].rowTime / MusicRate;
-        if (NoteInfo[i].notes & track) {
+    for (auto i : NoteInfo) {
+        float scaledtime = i.rowTime / MusicRate;
+        if (i.notes & track) {
             mats1 = mats2;
             mats2 = mats3;
             mats3 = 1000.f * (scaledtime - last);
@@ -430,8 +430,8 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
 
 int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
     int Interval = 0;
-    for (size_t i = 0; i < NoteInfo.size(); i++) {
-        if (NoteInfo[i].rowTime / MusicRate >= Interval * IntervalSpan)
+    for (auto i : NoteInfo) {
+        if (i.rowTime / MusicRate >= Interval * IntervalSpan)
             ++Interval;
     }
     return Interval;
@@ -665,8 +665,7 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int t1, i
         else {
             int taps = 0;
             int jumptaps = 0;
-            for (size_t r = 0; r < nervIntervals[i].size(); r++) {
-                int row = nervIntervals[i][r];
+            for (int row : nervIntervals[i]) {
                 if (NoteInfo[row].notes & firstNote) {
                     ++taps;
                     if (NoteInfo[row].notes & secondNote) {
@@ -699,8 +698,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t
         else {
             int lcol = 0;
             int rcol = 0;
-            for (size_t r = 0; r < nervIntervals[i].size(); r++) {
-                int row = nervIntervals[i][r];
+            for (int row : nervIntervals[i]) {
                 if (NoteInfo[row].notes & firstNote)
                     ++lcol;
                 if (NoteInfo[row].notes & secondNote)
@@ -739,8 +737,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
         else {
             int taps = 0;
             int handtaps = 0;
-            for (size_t r = 0; r < nervIntervals[i].size(); r++) {
-                int row = nervIntervals[i][r];
+            for (int row : nervIntervals[i]) {
                 int notes = (NoteInfo[row].notes & left ? 1 : 0) + (NoteInfo[row].notes & down ? 1 : 0) + (NoteInfo[row].notes & up ? 1 : 0) + (NoteInfo[row].notes & right ? 1 : 0);
                 taps += notes;
                 if (notes == 3)
@@ -771,8 +768,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
         else {
             int taps = 0;
             int jamps = 0;
-            for (size_t r = 0; r < nervIntervals[i].size(); r++) {
-                int row = nervIntervals[i][r];
+            for (int row : nervIntervals[i]) {
                 int notes = (NoteInfo[row].notes & left ? 1 : 0) + (NoteInfo[row].notes & down ? 1 : 0) + (NoteInfo[row].notes & up ? 1 : 0) + (NoteInfo[row].notes & right ? 1 : 0);
                 taps += notes;
                 if (notes == 2)
@@ -797,15 +793,15 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
             output[i] = 1.f;
         else {
             vector<float> cvint;
-            for (size_t ii = 0; ii < f1[i].size(); ii++)
-                cvint.emplace_back(f1[i][ii]);
-            for (size_t ii = 0; ii < f2[i].size(); ii++)
-                cvint.emplace_back(f2[i][ii]);
+            for (float & ii : f1[i])
+                cvint.emplace_back(ii);
+            for (float & ii : f2[i])
+                cvint.emplace_back(ii);
 
             float mmm = mean(cvint);
 
-            for (size_t i = 0; i < cvint.size(); ++i)
-                cvint[i] = mmm / cvint[i] < 0.6f ? mmm : cvint[i];
+            for (float & i : cvint)
+                i = mmm / i < 0.6f ? mmm : i;
 
 
             if (cvint.size() == 1) {
