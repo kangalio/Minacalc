@@ -93,7 +93,7 @@ public:
     hand objects and then runs the chisel function under varying circumstances
     to estimate difficulty for each different skillset. Currently only
     overall/stamina are being produced. */
-    vector<float> CalcMain(const vector<NoteInfo>& NoteInfo);
+    DifficultyRating CalcMain(const vector<NoteInfo>& NoteInfo);
 
     // redo these asap
     static vector<float> JackStamAdjust(vector<float>& j, float x);

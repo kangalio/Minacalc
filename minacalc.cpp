@@ -177,7 +177,7 @@ float quadprop(const vector<NoteInfo>& NoteInfo) {
     return static_cast<float>(quads) / static_cast<float>(taps);
 }
 
-vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
+DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     //LOG->Trace("%f", etaner.back());
     float grindscaler = 0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f);
     CalcClamp(grindscaler, 0.93f, 1.f);
@@ -254,7 +254,7 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     output.emplace_back(downscale_low_accuracy_scores(stam, Scoregoal));
 
     output.emplace_back(downscale_low_accuracy_scores(jack, Scoregoal));
-    float chordjack = jack * 0.75;
+    float chordjack = jack * 0.75f;
     output.emplace_back(downscale_low_accuracy_scores(chordjack, Scoregoal));
     float technorm = max(max(stream, js), hs);
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
@@ -356,7 +356,16 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
             highest = v;
     }
     output[0] = highest;
-    return output;
+    DifficultyRating difficulty = DifficultyRating {output[0],
+                                                    output[1],
+                                                    output[2],
+                                                    output[3],
+                                                    output[4],
+                                                    output[5],
+                                                    output[6],
+                                                    output[7]
+    };
+    return difficulty;
 }
 
 // ugly jack stuff
@@ -870,16 +879,13 @@ void Calc::Purge() {
 
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
-    vector<float> vec_output;
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
     CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    vec_output = doot->CalcMain(NoteInfo);
+    DifficultyRating output = doot->CalcMain(NoteInfo);
 
     doot->Purge();
-
-    DifficultyRating output {vec_output[0], vec_output[1], vec_output[2], vec_output[3], vec_output[4], vec_output[5], vec_output[6], vec_output[7]};
 
     return output;
 }
