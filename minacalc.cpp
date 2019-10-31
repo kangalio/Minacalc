@@ -171,6 +171,18 @@ float quadprop(const vector<NoteInfo>& NoteInfo) {
     return static_cast<float>(quads) / static_cast<float>(taps);
 }
 
+vector<float> skillset_vector(DifficultyRating& difficulty) {
+    return vector<float> {difficulty.overall,
+                          difficulty.stream,
+                          difficulty.jumpstream,
+                          difficulty.handstream,
+                          difficulty.stamina,
+                          difficulty.jack,
+                          difficulty.chordjack,
+                          difficulty.technical
+    };
+}
+
 float highest_difficulty(const DifficultyRating& difficulty) {
     return max(difficulty.stream,
             max(difficulty.jumpstream,
@@ -302,6 +314,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float overall = AggregateScores(output, 0.f, 10.24f, 1);
     output[0] = downscale_low_accuracy_scores(overall, Scoregoal);
 
+
     float aDvg = mean(output) * 1.2f;
     for (size_t i = 0; i < output.size(); i++) {
         if (i == 1 || i == 2 || i == 7) {
@@ -314,21 +327,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
         output[i] = downscale_low_accuracy_scores(output[i], Scoregoal);
     }
 
-    output[2] *= jumpthrill;
-    output[3] *= jumpthrill;
-    output[4] *= sqrt(jumpthrill) * 0.996f;
-    output[7] *= sqrt(jumpthrill);
-
-    float highest = 0.f;
-    for (auto v : output) {
-        if (v > highest)
-            highest = v;
-    }
-    output[0] = AggregateScores(output, 0.f, 10.24f, 1);;
-
-    float dating = 0.5f + (highest / 100.f);
-    CalcClamp(dating, 0.f, 0.9f);
-
     DifficultyRating difficulty = DifficultyRating {output[0],
                                                     output[1],
                                                     output[2],
@@ -338,6 +336,20 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                                     output[6],
                                                     output[7]
     };
+
+    difficulty.jumpstream *= jumpthrill;
+    difficulty.handstream *= jumpthrill;
+    difficulty.stamina *= sqrt(jumpthrill) * 0.996f;
+    difficulty.technical *= sqrt(jumpthrill);
+
+    float highest = max(difficulty.overall, highest_difficulty(difficulty));
+
+    vector<float> temp = skillset_vector(difficulty);
+    difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);;
+
+    float dating = 0.5f + (highest / 100.f);
+    CalcClamp(dating, 0.f, 0.9f);
+
 
     if (Scoregoal < dating) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
