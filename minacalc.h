@@ -72,7 +72,6 @@ public:
     vector<int> v_itvpoints;	// Point allotment for each interval
     vector<float> v_itvNPSdiff; // Calculated difficulty for each interval
     vector<float> v_itvMSdiff;  // Calculated difficulty for each interval
-    vector<float> dum;
 private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
