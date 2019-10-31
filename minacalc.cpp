@@ -931,24 +931,22 @@ vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, floa
 
 // Wrap difficulty calculation for all standard rates
 MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
-
     MinaSD allrates;
-
-    int rateCount = 21;
+    int lower_rate = 7;
+    int upper_rate = 21;
 
     if (!NoteInfo.empty())
     {
-        for (int i = 7; i < rateCount; i++)
+        for (int i = lower_rate; i < upper_rate; i++)
         {
-            auto tempVal = MinaSDCalc(NoteInfo,i / 10.f, 0.93f);
-            allrates.emplace_back(tempVal);
+            allrates.emplace_back(MinaSDCalc(NoteInfo,i / 10.f, 0.93f));
         }
     }
     else
     {
         vector<float> output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
 
-        for (int i = 7; i < rateCount; i++)
+        for (int i = lower_rate; i < upper_rate; i++)
         {
             allrates.emplace_back(output);
         }
