@@ -457,7 +457,6 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     left->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
     left->hsscale = HSDownscaler(NoteInfo);
     left->jumpscale = JumpDownscaler(NoteInfo);
-    left->dum = left->ohjumpscale;
 
     right = new Hand;
     right->InitHand(right_fingers[0], right_fingers[1]);
@@ -466,7 +465,6 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     right->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
     right->hsscale = left->hsscale;
     right->jumpscale = left->jumpscale;
-    right->dum = right->ohjumpscale;
 
     j0 = SequenceJack(NoteInfo, 0);
     j1 = SequenceJack(NoteInfo, 1);
