@@ -97,8 +97,8 @@ public:
     vector<float> CalcMain(const vector<NoteInfo>& NoteInfo);
 
     // redo these asap
-    vector<float> JackStamAdjust(vector<float>& j, float x, bool jackstam);
-    float JackLoss(vector<float>& j, float x, bool jackstam);
+    static vector<float> JackStamAdjust(vector<float>& j, float x);
+    static float JackLoss(vector<float>& j, float x);
     JackSeq SequenceJack(const vector<NoteInfo>& NoteInfo, int t);
 
     int numitv;
@@ -138,8 +138,7 @@ public:
                  bool jack,
                  bool nps,
                  bool js,
-                 bool hs,
-                 bool jackstam);
+                 bool hs);
 
     vector<float> OHJumpDownscaler(const vector<NoteInfo>& NoteInfo,
                                    int t1,
