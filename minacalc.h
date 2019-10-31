@@ -151,8 +151,8 @@ public:
     void Purge();
     float techscaler = 0.97f;
 
-    Hand* left = new Hand;
-    Hand* right = new Hand;
+    Hand* left_hand = new Hand;
+    Hand* right_hand = new Hand;
 
 private:
     vector<vector<int>> nervIntervals;

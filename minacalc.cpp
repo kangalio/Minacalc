@@ -116,9 +116,9 @@ float normalizer(float x, float y, float z1, float z2) {
 
 float jumpprop(const vector<NoteInfo>& NoteInfo) {
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     int taps = 0;
     int jumps = 0;
@@ -135,9 +135,9 @@ float jumpprop(const vector<NoteInfo>& NoteInfo) {
 
 float handprop(const vector<NoteInfo>& NoteInfo) {
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     int taps = 0;
     int hands = 0;
@@ -154,9 +154,9 @@ float handprop(const vector<NoteInfo>& NoteInfo) {
 
 float quadprop(const vector<NoteInfo>& NoteInfo) {
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     int taps = 0;
     int quads = 0;
@@ -454,21 +454,21 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
             right_fingers.emplace_back(ProcessFinger(NoteInfo, i));
     }
 
-    left = new Hand;
-    left->InitHand(left_fingers[0], left_fingers[1]);
-    left->ohjumpscale = OHJumpDownscaler(NoteInfo, 0, 1);
-    left->anchorscale = Anchorscaler(NoteInfo, 0, 1);
-    left->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
-    left->hsscale = HSDownscaler(NoteInfo);
-    left->jumpscale = JumpDownscaler(NoteInfo);
+    left_hand = new Hand;
+    left_hand->InitHand(left_fingers[0], left_fingers[1]);
+    left_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 0, 1);
+    left_hand->anchorscale = Anchorscaler(NoteInfo, 0, 1);
+    left_hand->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
+    left_hand->hsscale = HSDownscaler(NoteInfo);
+    left_hand->jumpscale = JumpDownscaler(NoteInfo);
 
-    right = new Hand;
-    right->InitHand(right_fingers[0], right_fingers[1]);
-    right->ohjumpscale = OHJumpDownscaler(NoteInfo, 2, 3);
-    right->anchorscale = Anchorscaler(NoteInfo, 2, 3);
-    right->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
-    right->hsscale = left->hsscale;
-    right->jumpscale = left->jumpscale;
+    right_hand = new Hand;
+    right_hand->InitHand(right_fingers[0], right_fingers[1]);
+    right_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 2, 3);
+    right_hand->anchorscale = Anchorscaler(NoteInfo, 2, 3);
+    right_hand->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
+    right_hand->hsscale = left_hand->hsscale;
+    right_hand->jumpscale = left_hand->jumpscale;
 
     j0 = SequenceJack(NoteInfo, 0);
     j1 = SequenceJack(NoteInfo, 1);
@@ -494,9 +494,9 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
     vector<vector<int>> itvnerv(numitv);
 
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     int column = 1 << t;
     for (size_t i = 0; i < NoteInfo.size(); i++) {
@@ -530,8 +530,8 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
 }
 
 void Calc::TotalMaxPoints() {
-    for (size_t i = 0; i < left->v_itvpoints.size(); i++)
-        MaxPoints += static_cast<int>(left->v_itvpoints[i] + right->v_itvpoints[i]);
+    for (size_t i = 0; i < left_hand->v_itvpoints.size(); i++)
+        MaxPoints += static_cast<int>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
 }
 
 float Calc::Chisel(float pskill, float res, int iter, bool stam, bool jack, bool nps, bool js, bool hs) {
@@ -544,7 +544,7 @@ float Calc::Chisel(float pskill, float res, int iter, bool stam, bool jack, bool
             gotpoints = MaxPoints - JackLoss(j0, pskill) - JackLoss(j1, pskill) - JackLoss(j2, pskill) - JackLoss(j3, pskill);
         }
         else
-            gotpoints = left->CalcInternal(pskill, stam, nps, js, hs) + right->CalcInternal(pskill, stam, nps, js, hs);
+            gotpoints = left_hand->CalcInternal(pskill, stam, nps, js, hs) + right_hand->CalcInternal(pskill, stam, nps, js, hs);
 
     } while (gotpoints / MaxPoints < Scoregoal);
     if (iter == 7)
@@ -724,9 +724,9 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t
 vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
@@ -755,9 +755,9 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
 vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
     int left = 1;
-    int down = 1 << 1;
-    int up = 1 << 2;
-    int right = 1 << 3;
+    int down = 2;
+    int up = 4;
+    int right = 8;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
@@ -847,17 +847,17 @@ void Calc::Purge() {
     vector<float> l4;
     vector<float> l5;
 
-    left->ohjumpscale.swap(l1);
-    left->anchorscale.swap(l2);
-    left->rollscale.swap(l3);
-    left->hsscale.swap(l4);
-    left->jumpscale.swap(l5);
+    left_hand->ohjumpscale.swap(l1);
+    left_hand->anchorscale.swap(l2);
+    left_hand->rollscale.swap(l3);
+    left_hand->hsscale.swap(l4);
+    left_hand->jumpscale.swap(l5);
 
-    left->ohjumpscale.shrink_to_fit();
-    left->anchorscale.shrink_to_fit();
-    left->rollscale.shrink_to_fit();
-    left->hsscale.shrink_to_fit();
-    left->jumpscale.shrink_to_fit();
+    left_hand->ohjumpscale.shrink_to_fit();
+    left_hand->anchorscale.shrink_to_fit();
+    left_hand->rollscale.shrink_to_fit();
+    left_hand->hsscale.shrink_to_fit();
+    left_hand->jumpscale.shrink_to_fit();
 
     vector<float> r1;
     vector<float> r2;
@@ -865,21 +865,21 @@ void Calc::Purge() {
     vector<float> r4;
     vector<float> r5;
 
-    right->ohjumpscale.swap(l1);
-    right->anchorscale.swap(l2);
-    right->rollscale.swap(l3);
-    right->hsscale.swap(l4);
-    right->jumpscale.swap(l5);
+    right_hand->ohjumpscale.swap(l1);
+    right_hand->anchorscale.swap(l2);
+    right_hand->rollscale.swap(l3);
+    right_hand->hsscale.swap(l4);
+    right_hand->jumpscale.swap(l5);
 
-    right->ohjumpscale.shrink_to_fit();
-    right->anchorscale.shrink_to_fit();
-    right->rollscale.shrink_to_fit();
-    right->hsscale.shrink_to_fit();
-    right->jumpscale.shrink_to_fit();
+    right_hand->ohjumpscale.shrink_to_fit();
+    right_hand->anchorscale.shrink_to_fit();
+    right_hand->rollscale.shrink_to_fit();
+    right_hand->hsscale.shrink_to_fit();
+    right_hand->jumpscale.shrink_to_fit();
 
 
-    SAFE_DELETE(left);
-    SAFE_DELETE(right);
+    SAFE_DELETE(left_hand);
+    SAFE_DELETE(right_hand);
 }
 
 // Function to generate SSR rating
