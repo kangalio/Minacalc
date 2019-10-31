@@ -24,8 +24,8 @@ inline void CalcClamp(T& x, U l, V h) {
 
 inline float mean(vector<float>& input) {
     float sum = 0.f;
-    for (size_t i = 0; i < input.size(); ++i)
-        sum += input[i];
+    for (float i : input)
+        sum += i;
 
     return sum / input.size();
 }
@@ -36,12 +36,12 @@ inline float cv(vector<float> &input) {
     float mean;
     float sd = 0.f;
 
-    for (size_t i = 0; i < input.size(); i++)
-        sum += input[i];
+    for (float i : input)
+        sum += i;
 
     mean = sum / input.size();
-    for (size_t i = 0; i < input.size(); i++)
-        sd += pow(input[i] - mean, 2);
+    for (float i : input)
+        sd += pow(i - mean, 2);
 
     return sqrt(sd / input.size()) / mean;
 }
@@ -62,13 +62,13 @@ inline void PatternSmooth(vector<float>& input) {
     float f3 = 1.f;
     float total = 3.f;
 
-    for (size_t i = 0; i < input.size(); i++) {
+    for (float & i : input) {
         total -= f1;
         f1 = f2;
         f2 = f3;
-        f3 = input[i];
+        f3 = i;
         total += f3;
-        input[i] = (f1 + f2 + f3) / 3;
+        i = (f1 + f2 + f3) / 3;
     }
 }
 
@@ -78,13 +78,13 @@ inline void DifficultySmooth(vector<float>& input) {
     float f3 = 0.f;
     float total = 0.f;
 
-    for (size_t i = 0; i < input.size(); i++) {
+    for (float & i : input) {
         total -= f1;
         f1 = f2;
         f2 = f3;
-        f3 = input[i];
+        f3 = i;
         total += f3;
-        input[i] = (f1 + f2 + f3) / 3;
+        i = (f1 + f2 + f3) / 3;
     }
 }
 
@@ -127,16 +127,16 @@ float jumpprop(const vector<NoteInfo>& NoteInfo) {
     int right = 1 << 3;
 
     int taps = 0;
-    int jamps = 0;
+    int jumps = 0;
 
     for (auto r : NoteInfo) {
         int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
         taps += notes;
         if (notes == 2)
-            jamps += notes;
+            jumps += notes;
     }
 
-    return static_cast<float>(jamps) / static_cast<float>(taps);
+    return static_cast<float>(jumps) / static_cast<float>(taps);
 }
 
 float handprop(const vector<NoteInfo>& NoteInfo) {
@@ -200,8 +200,8 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float allhandsdownscaler = 1.23f - hprop;
     CalcClamp(allhandsdownscaler, 0.85f, 1.f);
 
-    float manyjampdownscaler = 1.43f - jprop;
-    CalcClamp(manyjampdownscaler, 0.85f, 1.f);
+    float manyjumpsdownscaler = 1.43f - jprop;
+    CalcClamp(manyjumpsdownscaler, 0.85f, 1.f);
 
     float qprop = quadprop(NoteInfo);
     float lotquaddownscaler = 1.13f - qprop;
@@ -267,9 +267,9 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     // chordjack
     float cj = output[3];
 
-    output[1] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler;
+    output[1] *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
     output[2] *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
-    output[3] *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjampdownscaler * lotquaddownscaler;
+    output[3] *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
     output[4] *= shortstamdownscaler * 0.985f * lotquaddownscaler;
 
     cj = normalizer(cj, output[3], 5.5f, 0.3f) * definitelycj * 1.025f;
@@ -278,7 +278,7 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     if (iscj)
         output[6] = cj;
 
-    output[7] *= allhandsdownscaler * manyjampdownscaler * lotquaddownscaler * 1.01f;
+    output[7] *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
     float stamclamp = max(max(output[1], output[5]), max(output[2], output[3]));
     CalcClamp(output[4], 1.f, stamclamp * 1.1f);
@@ -767,14 +767,14 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
             output[i] = 1.f;
         else {
             int taps = 0;
-            int jamps = 0;
+            int jumps = 0;
             for (int row : nervIntervals[i]) {
                 int notes = (NoteInfo[row].notes & left ? 1 : 0) + (NoteInfo[row].notes & down ? 1 : 0) + (NoteInfo[row].notes & up ? 1 : 0) + (NoteInfo[row].notes & right ? 1 : 0);
                 taps += notes;
                 if (notes == 2)
-                    jamps += notes;
+                    jumps += notes;
             }
-            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jamps) / static_cast<float>(taps) / 6.f))) : 1.f;
+            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jumps) / static_cast<float>(taps) / 6.f))) : 1.f;
 
             if (logpatterns)
                 cout << "ju " << output[i] << endl;
