@@ -36,7 +36,7 @@ public:
     /*	Spits out a rough estimate of difficulty based on the ms values within
     the interval The vector passed to it is the vector of ms values within each
     interval, and not the full vector of intervals. */
-    float CalcMSEstimate(vector<float>& input);
+    static float CalcMSEstimate(vector<float>& input);
 
     // Wraps the three prepatory functions below
     void InitHand(Finger& f1, Finger& f2);
