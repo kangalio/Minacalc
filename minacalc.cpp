@@ -177,6 +177,15 @@ float quadprop(const vector<NoteInfo>& NoteInfo) {
     return static_cast<float>(quads) / static_cast<float>(taps);
 }
 
+float highest_difficulty(const DifficultyRating& difficulty) {
+    return max(difficulty.stream,
+            max(difficulty.jumpstream,
+                    max(difficulty.handstream,
+                            max( difficulty.stamina,
+                                    max(difficulty.jack,
+                                            max(difficulty.chordjack, difficulty.technical))))));
+}
+
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     //LOG->Trace("%f", etaner.back());
     float grindscaler = 0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f);
@@ -326,36 +335,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float dating = 0.5f + (highest / 100.f);
     CalcClamp(dating, 0.f, 0.9f);
 
-    if (Scoregoal < dating) {
-        for (float & i : output) {
-            i = 0.f;
-        }
-    }
-
-    output[5] *= 1.0075f;
-
-    float hsnottech = output[7] - output[3];
-    float jsnottech = output[7] - output[2];
-
-    if (highest == output[7]) {
-        hsnottech = 4.5f - hsnottech;
-        CalcClamp(hsnottech, 0.f, 4.5f);
-        output[7] -= hsnottech;
-
-        jsnottech = 4.5f - jsnottech;
-        CalcClamp(jsnottech, 0.f, 4.5f);
-        output[7] -= jsnottech;
-    }
-
-    output[7] *= 1.025f;
-
-    highest = 0.f;
-    output[0] = 0.f;
-    for (auto v : output) {
-        if (v > highest)
-            highest = v;
-    }
-    output[0] = highest;
     DifficultyRating difficulty = DifficultyRating {output[0],
                                                     output[1],
                                                     output[2],
@@ -365,6 +344,29 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                                     output[6],
                                                     output[7]
     };
+
+    if (Scoregoal < dating) {
+        difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+    }
+
+    difficulty.jack *= 1.0075f;
+
+    float hsnottech = difficulty.technical - difficulty.handstream;
+    float jsnottech = difficulty.technical - difficulty.jumpstream;
+
+    if (highest == difficulty.technical) {
+        hsnottech = 4.5f - hsnottech;
+        CalcClamp(hsnottech, 0.f, 4.5f);
+        difficulty.technical -= hsnottech;
+
+        jsnottech = 4.5f - jsnottech;
+        CalcClamp(jsnottech, 0.f, 4.5f);
+        difficulty.technical -= jsnottech;
+    }
+
+    difficulty.technical *= 1.025f;
+    difficulty.overall = highest_difficulty(difficulty);
+
     return difficulty;
 }
 
