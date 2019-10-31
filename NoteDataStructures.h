@@ -9,4 +9,15 @@ struct NoteInfo
     float rowTime;
 };
 
+struct DifficultyRating {
+    float overall;
+    float stream;
+    float jumpstream;
+    float handstream;
+    float stamina;
+    float jack;
+    float chordjack;
+    float technical;
+};
+
 #endif

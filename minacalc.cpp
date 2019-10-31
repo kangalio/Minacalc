@@ -869,15 +869,17 @@ void Calc::Purge() {
 }
 
 // Function to generate SSR rating
-vector<float> MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
-    vector<float> output;
+DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
+    vector<float> vec_output;
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
     CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
-    output = doot->CalcMain(NoteInfo);
+    vec_output = doot->CalcMain(NoteInfo);
 
     doot->Purge();
+
+    DifficultyRating output {vec_output[0], vec_output[1], vec_output[2], vec_output[3], vec_output[4], vec_output[5], vec_output[6], vec_output[7]};
 
     return output;
 }
@@ -888,7 +890,7 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
     int lower_rate = 7;
     int upper_rate = 21;
 
-    if (!NoteInfo.empty())
+    /*if (!NoteInfo.empty())
     {
         for (int i = lower_rate; i < upper_rate; i++)
         {
@@ -896,14 +898,14 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
         }
     }
     else
-    {
-        vector<float> output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+    {*/
+        DifficultyRating output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 
         for (int i = lower_rate; i < upper_rate; i++)
         {
             allrates.emplace_back(output);
         }
-    }
+    //}
     return allrates;
 }
 

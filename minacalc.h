@@ -15,8 +15,7 @@ using namespace std;
 #define MINACALC_API
 #endif
 
-typedef vector<float> SDiffs;
-typedef vector<SDiffs> MinaSD;
+typedef vector<DifficultyRating> MinaSD;
 
 typedef vector<vector<float>> Finger;
 typedef vector<Finger> ProcessedFingers;
@@ -173,7 +172,7 @@ private:
     JackSeq j3;
 };
 
-MINACALC_API vector<float>
+MINACALC_API DifficultyRating
 MinaSDCalc(const vector<NoteInfo>& NoteInfo,
            float musicrate,
            float goal);
