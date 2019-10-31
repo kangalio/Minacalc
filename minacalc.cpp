@@ -220,14 +220,13 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float hs = Chisel(0.1f, 10.24f, 1, false, false, true, false, true);
     float tech = Chisel(0.1f, 10.24f, 1, false, false, false, false, false);
     float jack = Chisel(0.1f, 10.24f, 1, false, true, true, false, false);
-    float jackstam = jack; //Chisel(0.1f, 10.24f, 1, false, true, true, false, false, true);
 
     float techbase = max(stream, jack);
     float techorig = tech;
     tech = (tech / techbase)*tech;
     CalcClamp(tech, techorig*0.85f, techorig);
 
-    float stam = 0.f;
+    float stam;
     if (stream > tech || js > tech || hs > tech)
         if (stream > js && stream > hs)
             stam = Chisel(stream - 0.1f, 2.56f, 1, true, false, true, false, false);
@@ -255,8 +254,8 @@ vector<float> Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     output.emplace_back(downscale_low_accuracy_scores(stam, Scoregoal));
 
     output.emplace_back(downscale_low_accuracy_scores(jack, Scoregoal));
-    jackstam = normalizer(jackstam, jack, 5.5f, 0.25f);
-    output.emplace_back(downscale_low_accuracy_scores(jackstam, Scoregoal));
+    float chordjack = jack * 0.75;
+    output.emplace_back(downscale_low_accuracy_scores(chordjack, Scoregoal));
     float technorm = max(max(stream, js), hs);
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
     output.emplace_back(downscale_low_accuracy_scores(tech, Scoregoal));
