@@ -225,9 +225,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float jumpthrill = 1.625f - jprop - hprop;
     CalcClamp(jumpthrill, 0.85f, 1.f);
 
-    vector<float> output;
-    output.reserve(8);
-
     InitializeHands(NoteInfo);
     TotalMaxPoints();
     float stream = Chisel(0.1f, 10.24f, 1, false, false, true, false, false);
@@ -252,51 +249,44 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     else
         stam = Chisel(tech - 0.1f, 2.56f, 1, true, false, false, false, false);
 
-    output.emplace_back(0.f); //temp
-    output.emplace_back(downscale_low_accuracy_scores(stream, Scoregoal));
-
     js = normalizer(js, stream, 7.25f, 0.25f);
-    output.emplace_back(downscale_low_accuracy_scores(js, Scoregoal));
     hs = normalizer(hs, stream, 6.5f, 0.3f);
     hs = normalizer(hs, js, 11.5f, 0.15f);
-    output.emplace_back(downscale_low_accuracy_scores(hs, Scoregoal));
 
     float stambase = max(max(stream, tech* 0.96f), max(js, hs));
     if (stambase == stream)
         stambase *= 0.975f;
 
     stam = normalizer(stam, stambase, 7.75f, 0.2f);
-    output.emplace_back(downscale_low_accuracy_scores(stam, Scoregoal));
 
-    output.emplace_back(downscale_low_accuracy_scores(jack, Scoregoal));
     float chordjack = jack * 0.75f;
-    output.emplace_back(downscale_low_accuracy_scores(chordjack, Scoregoal));
     float technorm = max(max(stream, js), hs);
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
-    output.emplace_back(downscale_low_accuracy_scores(tech, Scoregoal));
+
+    DifficultyRating difficulty = DifficultyRating {0.0,
+                                                    downscale_low_accuracy_scores(stream, Scoregoal),
+                                                    downscale_low_accuracy_scores(js, Scoregoal),
+                                                    downscale_low_accuracy_scores(hs, Scoregoal),
+                                                    downscale_low_accuracy_scores(stam, Scoregoal),
+                                                    downscale_low_accuracy_scores(jack, Scoregoal),
+                                                    downscale_low_accuracy_scores(chordjack, Scoregoal),
+                                                    downscale_low_accuracy_scores(tech, Scoregoal)
+    };
 
     float definitelycj = qprop + hprop + jprop + 0.2f;
     CalcClamp(definitelycj, 0.5f, 1.f);
 
     // chordjack
-    float cj = output[3];
+    float cj = difficulty.handstream;
 
-    output[1] *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
-    output[2] *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
-    output[3] *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
-    output[4] *= shortstamdownscaler * 0.985f * lotquaddownscaler;
+    difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
+    difficulty.jumpstream *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
+    difficulty.handstream *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
+    difficulty.stamina *= shortstamdownscaler * 0.985f * lotquaddownscaler;
 
-    cj = normalizer(cj, output[3], 5.5f, 0.3f) * definitelycj * 1.025f;
+    cj = normalizer(cj, difficulty.handstream, 5.5f, 0.3f) * definitelycj * 1.025f;
 
-    DifficultyRating difficulty = DifficultyRating {output[0],
-                                                    output[1],
-                                                    output[2],
-                                                    output[3],
-                                                    output[4],
-                                                    output[5],
-                                                    output[6],
-                                                    output[7]
-    };
+
 
     if (cj > difficulty.jack)
         difficulty.chordjack = cj;
