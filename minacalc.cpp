@@ -227,8 +227,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     float techbase = max(stream, jack);
     float techorig = tech;
-    tech = (tech / techbase)*tech;
-    CalcClampRef(tech, techorig * 0.85f, techorig);
+    tech = CalcClamp((tech / techbase)*tech, techorig * 0.85f, techorig);
 
     float stam;
     if (stream > tech || js > tech || hs > tech)
@@ -265,8 +264,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                                     downscale_low_accuracy_scores(tech, Scoregoal)
     };
 
-    float definitelycj = qprop + hprop + jprop + 0.2f;
-    CalcClampRef(definitelycj, 0.5f, 1.f);
+    float definitelycj = CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f);
 
     // chordjack
     float cj = difficulty.handstream;
@@ -288,11 +286,10 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
     float stamclamp = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
-    CalcClampRef(difficulty.stamina, 1.f, stamclamp * 1.1f);
+    difficulty.stamina = CalcClamp(difficulty.stamina, 1.f, stamclamp * 1.1f);
 
     dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
-    float stupidvalue = 1.f - (dumbvalue - 2.55f);
-    CalcClampRef(stupidvalue, 0.85f, 1.f);
+    float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
     if (stupidvalue <= 0.95f) {
@@ -323,8 +320,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     vector<float> temp = skillset_vector(difficulty);
     difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);;
 
-    float dating = 0.5f + (highest / 100.f);
-    CalcClampRef(dating, 0.f, 0.9f);
+    float dating = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
 
 
     if (Scoregoal < dating) {
@@ -334,13 +330,8 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.jack *= 1.0075f;
 
     if (highest == difficulty.technical) {
-        float hsnottech = 4.5f - difficulty.technical + difficulty.handstream;
-        CalcClampRef(hsnottech, 0.f, 4.5f);
-        difficulty.technical -= hsnottech;
-
-        float jsnottech = 4.5f - difficulty.technical + difficulty.jumpstream;
-        CalcClampRef(jsnottech, 0.f, 4.5f);
-        difficulty.technical -= jsnottech;
+        difficulty.technical -= CalcClamp(4.5f - difficulty.technical + difficulty.handstream, 0.f, 4.5f);
+        difficulty.technical -= CalcClamp(4.5f - difficulty.technical + difficulty.jumpstream, 0.f, 4.5f);
     }
 
     difficulty.technical *= 1.025f;
