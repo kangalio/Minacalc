@@ -8,19 +8,9 @@
 #include <mutex>
 #include <cmath>
 
-using namespace std;
-
 
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
-template<typename T, typename U, typename V>
-inline void CalcClampRef(T& x, U l, V h) {
-    if (x > static_cast<T>(h))
-        x = static_cast<T>(h);
-    else
-    if (x < static_cast<T>(l))
-        x = static_cast<T>(l);
-}
 template<typename T>
 T CalcClamp(T x, T l, T h) {
     if (x > h)
@@ -114,10 +104,8 @@ inline float AggregateScores(vector<float>& invector, float rating, float res, i
 }
 
 float normalizer(float x, float y, float z1, float z2) {
-    float norm = ((x / y) - 1.f)*z1;
-    CalcClampRef(norm, 0.f, 1.f);
-    float output = x * z2 * norm + x * (1.f - z2);
-    return output;
+    float norm = CalcClamp(((x / y) - 1.f)*z1, 0.f, 1.f);
+    return x * z2 * norm + x * (1.f - z2);
 }
 
 float jumpprop(const vector<NoteInfo>& NoteInfo) {
@@ -355,7 +343,7 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x) {
         mod += ((j[i] * multstam / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        CalcClampRef(mod, 1.f, ceil * sqrt(floor));
+        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor));
         output[i] = j[i] * mod;
     }
     return output;
@@ -368,8 +356,7 @@ float Calc::JackLoss(vector<float>& j, float x) {
         if (x < i)
             output += 7.f - (7.f * pow(x / (i * 0.96f), 1.5f));
     }
-    CalcClampRef(output, 0.f, 10000.f);
-    return output;
+    return CalcClamp(output, 0.f, 10000.f);
 }
 
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
@@ -388,12 +375,8 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
             mats2 = mats3;
             mats3 = 1000.f * (scaledtime - last);
             last = scaledtime;
-            timestamp = (mats1 + mats2 + mats3) / 3.f;
-
-            CalcClampRef(timestamp, 25.f, mats3 * 1.4f);
-            float tmp = 1 / timestamp * 2800.f;
-            CalcClampRef(tmp, 0.f, 50.f);
-            output.emplace_back(tmp);
+            timestamp = CalcClamp((mats1 + mats2 + mats3) / 3.f, 25.f, mats3 * 1.4f);
+            output.emplace_back(CalcClamp(1 / timestamp * 2800.f, 0.f, 50.f));
         }
     }
     return output;
@@ -456,7 +439,6 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
     float last = -5.f;
     Finger AllIntervals(numitv);
     vector<float> CurrentInterval;
-    float Timestamp;
     vector<int> itvnervtmp;
     vector<vector<int>> itvnerv(numitv);
 
@@ -479,10 +461,8 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
         }
 
         if (NoteInfo[i].notes & column) {
-            Timestamp = 1000 * (scaledtime - last);
+            CurrentInterval.emplace_back(CalcClamp(1000 * (scaledtime - last), 40.f, 5000.f));
             last = scaledtime;
-            CalcClampRef(Timestamp, 40.f, 5000.f);
-            CurrentInterval.emplace_back(Timestamp);
         }
 
         if (t == 0 && (NoteInfo[i].notes & left || NoteInfo[i].notes & down || NoteInfo[i].notes & up || NoteInfo[i].notes & right))
@@ -579,7 +559,7 @@ vector<float> Hand::StamAdjust(float x, vector<float> diff) {
         mod += ((ebb / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        CalcClampRef(mod, floor, ceil);
+        mod = CalcClamp(mod, floor, ceil);
         output[i] = diff[i] * mod;
     }
     return output;
@@ -669,13 +649,11 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t
                     ++rcol;
             }
             bool anyzero = lcol == 0 || rcol == 0;
-            output[i] = anyzero ? 1.f : sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f));
+            output[i] = CalcClamp(anyzero ? 1.f : sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
 
             float stupidthing = (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
             dumbvalue += stupidthing;
             ++dumbcounter;
-
-            CalcClampRef(output[i], 0.8f, 1.05f);
 
             if (logpatterns)
                 cout << "an " << output[i] << endl;
@@ -778,7 +756,7 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
                 output[i] = sqrt(sqrt(0.85f + dacv));
             else
                 output[i] = pow(0.85f + dacv, 3);
-            CalcClampRef(output[i], 0.f, 1.075f);
+            output[i] = CalcClamp(output[i], 0.f, 1.075f);
 
             if (logpatterns)
                 cout << "ro " << output[i] << endl;
@@ -853,7 +831,7 @@ void Calc::Purge() {
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
-    CalcClampRef(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
+    goal = CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
     DifficultyRating output = doot->CalcMain(NoteInfo);
 
