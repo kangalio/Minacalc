@@ -288,32 +288,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     cj = normalizer(cj, output[3], 5.5f, 0.3f) * definitelycj * 1.025f;
 
-    if (cj > output[5])
-        output[6] = cj;
-    else
-        output[6] *= 0.9f;
-
-    output[7] *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
-
-    float stamclamp = max(max(output[1], output[5]), max(output[2], output[3]));
-    CalcClamp(output[4], 1.f, stamclamp * 1.1f);
-
-    dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
-    float stupidvalue = 1.f - (dumbvalue - 2.55f);
-    CalcClamp(stupidvalue, 0.85f, 1.f);
-    output[7] *= stupidvalue;
-
-    if (stupidvalue <= 0.95f) {
-        output[5] *= 1.f + (1.f - sqrt(stupidvalue));
-    }
-
-    float skadoot = max(output[3], output[2]);
-    if (output[1] < skadoot)
-        output[1] -= sqrt(skadoot - output[1]);
-
-    float overall = AggregateScores(output, 0.f, 10.24f, 1);
-    output[0] = downscale_low_accuracy_scores(overall, Scoregoal);
-
     DifficultyRating difficulty = DifficultyRating {output[0],
                                                     output[1],
                                                     output[2],
@@ -324,7 +298,34 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                                     output[7]
     };
 
+    if (cj > difficulty.jack)
+        difficulty.chordjack = cj;
+    else
+        difficulty.chordjack *= 0.9f;
+
+    difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
+
+    float stamclamp = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
+    CalcClamp(difficulty.stamina, 1.f, stamclamp * 1.1f);
+
+    dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
+    float stupidvalue = 1.f - (dumbvalue - 2.55f);
+    CalcClamp(stupidvalue, 0.85f, 1.f);
+    difficulty.technical *= stupidvalue;
+
+    if (stupidvalue <= 0.95f) {
+        difficulty.jack *= 1.f + (1.f - sqrt(stupidvalue));
+    }
+
+    float skadoot = max(difficulty.handstream, difficulty.jumpstream);
+    if (difficulty.stream < skadoot)
+        difficulty.stream -= sqrt(skadoot - difficulty.stream);
+
     vector<float> temp_vec = skillset_vector(difficulty);
+    float overall = AggregateScores(temp_vec, 0.f, 10.24f, 1);
+    difficulty.overall = downscale_low_accuracy_scores(overall, Scoregoal);
+
+    temp_vec = skillset_vector(difficulty);
     float aDvg = mean(temp_vec) * 1.2f;
     difficulty.overall = min(difficulty.overall, aDvg) * grindscaler * grindscaler2;
     difficulty.overall = downscale_low_accuracy_scores(difficulty.overall, Scoregoal);
