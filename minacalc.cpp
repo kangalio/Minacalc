@@ -14,12 +14,21 @@ using namespace std;
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
 template<typename T, typename U, typename V>
-inline void CalcClamp(T& x, U l, V h) {
+inline void CalcClampRef(T& x, U l, V h) {
     if (x > static_cast<T>(h))
         x = static_cast<T>(h);
     else
     if (x < static_cast<T>(l))
         x = static_cast<T>(l);
+}
+template<typename T>
+T CalcClamp(T x, T l, T h) {
+    if (x > h)
+        x = h;
+    else
+    if (x < l)
+        x = l;
+return x;
 }
 
 inline float mean(vector<float>& input) {
@@ -106,7 +115,7 @@ inline float AggregateScores(vector<float>& invector, float rating, float res, i
 
 float normalizer(float x, float y, float z1, float z2) {
     float norm = ((x / y) - 1.f)*z1;
-    CalcClamp(norm, 0.f, 1.f);
+    CalcClampRef(norm, 0.f, 1.f);
     float output = x * z2 * norm + x * (1.f - z2);
     return output;
 }
@@ -190,37 +199,23 @@ float highest_difficulty(const DifficultyRating& difficulty) {
 }
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
-    //LOG->Trace("%f", etaner.back());
-    float grindscaler = 0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f);
-    CalcClamp(grindscaler, 0.93f, 1.f);
+    float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f);
+    float grindscaler2 = CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
 
-    float grindscaler2 = 0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f);
-    CalcClamp(grindscaler2, 0.87f, 1.f);
-
-    float shortstamdownscaler = 0.9f + (0.1f * (NoteInfo.back().rowTime - 150.f) / 150.f);
-    CalcClamp(shortstamdownscaler, 0.9f, 1.f);
+    float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (NoteInfo.back().rowTime - 150.f) / 150.f), 0.9f, 1.f);
 
     float jprop = jumpprop(NoteInfo);
-    float nojumpsdownscaler = 0.8f + (0.2f * (jprop + 0.5f));
-    CalcClamp(nojumpsdownscaler, 0.8f, 1.f);
+    float nojumpsdownscaler = CalcClamp(0.8f + (0.2f * (jprop + 0.5f)), 0.8f, 1.f);
+    float manyjumpsdownscaler = CalcClamp(1.43f - jprop, 0.85f, 1.f);
 
     float hprop = handprop(NoteInfo);
-
-    float nohandsdownscaler = 0.8f + (0.2f * (hprop + 0.75f));
-    CalcClamp(nohandsdownscaler, 0.8f, 1.f);
-
-    float allhandsdownscaler = 1.23f - hprop;
-    CalcClamp(allhandsdownscaler, 0.85f, 1.f);
-
-    float manyjumpsdownscaler = 1.43f - jprop;
-    CalcClamp(manyjumpsdownscaler, 0.85f, 1.f);
+    float nohandsdownscaler = CalcClamp(0.8f + (0.2f * (hprop + 0.75f)), 0.8f, 1.f);
+    float allhandsdownscaler = CalcClamp(1.23f - hprop, 0.85f, 1.f);
 
     float qprop = quadprop(NoteInfo);
-    float lotquaddownscaler = 1.13f - qprop;
-    CalcClamp(lotquaddownscaler, 0.85f, 1.f);
+    float lotquaddownscaler = CalcClamp(1.13f - qprop, 0.85f, 1.f);
 
-    float jumpthrill = 1.625f - jprop - hprop;
-    CalcClamp(jumpthrill, 0.85f, 1.f);
+    float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
     InitializeHands(NoteInfo);
     TotalMaxPoints();
@@ -233,7 +228,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float techbase = max(stream, jack);
     float techorig = tech;
     tech = (tech / techbase)*tech;
-    CalcClamp(tech, techorig*0.85f, techorig);
+    CalcClampRef(tech, techorig * 0.85f, techorig);
 
     float stam;
     if (stream > tech || js > tech || hs > tech)
@@ -271,7 +266,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     };
 
     float definitelycj = qprop + hprop + jprop + 0.2f;
-    CalcClamp(definitelycj, 0.5f, 1.f);
+    CalcClampRef(definitelycj, 0.5f, 1.f);
 
     // chordjack
     float cj = difficulty.handstream;
@@ -293,11 +288,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
     float stamclamp = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
-    CalcClamp(difficulty.stamina, 1.f, stamclamp * 1.1f);
+    CalcClampRef(difficulty.stamina, 1.f, stamclamp * 1.1f);
 
     dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
     float stupidvalue = 1.f - (dumbvalue - 2.55f);
-    CalcClamp(stupidvalue, 0.85f, 1.f);
+    CalcClampRef(stupidvalue, 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
     if (stupidvalue <= 0.95f) {
@@ -329,7 +324,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);;
 
     float dating = 0.5f + (highest / 100.f);
-    CalcClamp(dating, 0.f, 0.9f);
+    CalcClampRef(dating, 0.f, 0.9f);
 
 
     if (Scoregoal < dating) {
@@ -340,11 +335,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     if (highest == difficulty.technical) {
         float hsnottech = 4.5f - difficulty.technical + difficulty.handstream;
-        CalcClamp(hsnottech, 0.f, 4.5f);
+        CalcClampRef(hsnottech, 0.f, 4.5f);
         difficulty.technical -= hsnottech;
 
         float jsnottech = 4.5f - difficulty.technical + difficulty.jumpstream;
-        CalcClamp(jsnottech, 0.f, 4.5f);
+        CalcClampRef(jsnottech, 0.f, 4.5f);
         difficulty.technical -= jsnottech;
     }
 
@@ -369,7 +364,7 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x) {
         mod += ((j[i] * multstam / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        CalcClamp(mod, 1.f, ceil*sqrt(floor));
+        CalcClampRef(mod, 1.f, ceil * sqrt(floor));
         output[i] = j[i] * mod;
     }
     return output;
@@ -382,7 +377,7 @@ float Calc::JackLoss(vector<float>& j, float x) {
         if (x < i)
             output += 7.f - (7.f * pow(x / (i * 0.96f), 1.5f));
     }
-    CalcClamp(output, 0.f, 10000.f);
+    CalcClampRef(output, 0.f, 10000.f);
     return output;
 }
 
@@ -404,9 +399,9 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
             last = scaledtime;
             timestamp = (mats1 + mats2 + mats3) / 3.f;
 
-            CalcClamp(timestamp, 25.f, mats3*1.4f);
+            CalcClampRef(timestamp, 25.f, mats3 * 1.4f);
             float tmp = 1 / timestamp * 2800.f;
-            CalcClamp(tmp, 0.f, 50.f);
+            CalcClampRef(tmp, 0.f, 50.f);
             output.emplace_back(tmp);
         }
     }
@@ -495,7 +490,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
         if (NoteInfo[i].notes & column) {
             Timestamp = 1000 * (scaledtime - last);
             last = scaledtime;
-            CalcClamp(Timestamp, 40.f, 5000.f);
+            CalcClampRef(Timestamp, 40.f, 5000.f);
             CurrentInterval.emplace_back(Timestamp);
         }
 
@@ -593,7 +588,7 @@ vector<float> Hand::StamAdjust(float x, vector<float> diff) {
         mod += ((ebb / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        CalcClamp(mod, floor, ceil);
+        CalcClampRef(mod, floor, ceil);
         output[i] = diff[i] * mod;
     }
     return output;
@@ -689,7 +684,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t
             dumbvalue += stupidthing;
             ++dumbcounter;
 
-            CalcClamp(output[i], 0.8f, 1.05f);
+            CalcClampRef(output[i], 0.8f, 1.05f);
 
             if (logpatterns)
                 cout << "an " << output[i] << endl;
@@ -792,7 +787,7 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
                 output[i] = sqrt(sqrt(0.85f + dacv));
             else
                 output[i] = pow(0.85f + dacv, 3);
-            CalcClamp(output[i], 0.f, 1.075f);
+            CalcClampRef(output[i], 0.f, 1.075f);
 
             if (logpatterns)
                 cout << "ro " << output[i] << endl;
@@ -867,7 +862,7 @@ void Calc::Purge() {
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     unique_ptr<Calc> doot = make_unique<Calc>();
     doot->MusicRate = musicrate;
-    CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
+    CalcClampRef(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
     DifficultyRating output = doot->CalcMain(NoteInfo);
 
