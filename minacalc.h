@@ -177,9 +177,7 @@ MinaSDCalc(const vector<NoteInfo>& NoteInfo,
            float musicrate,
            float goal);
 MINACALC_API MinaSD
-MinaSDCalc(const vector<NoteInfo>& NoteInfo,
-           float goal,
-           bool negbpms);
+MinaSDCalc(const vector<NoteInfo>& NoteInfo);
 MINACALC_API int
 GetCalcVersion();
 

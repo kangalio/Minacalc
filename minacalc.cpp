@@ -847,25 +847,17 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
     int upper_rate = 21;
 
     if (!NoteInfo.empty())
-    {
         for (int i = lower_rate; i < upper_rate; i++)
-        {
             allrates.emplace_back(MinaSDCalc(NoteInfo,i / 10.f, 0.93f));
-        }
-    }
-    else
-    {
+    else {
         DifficultyRating output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-
         for (int i = lower_rate; i < upper_rate; i++)
-        {
             allrates.emplace_back(output);
-        }
     }
     return allrates;
 }
 
 int GetCalcVersion()
 {
-    return 263;
+    return -1;
 }
