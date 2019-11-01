@@ -187,8 +187,8 @@ float highest_difficulty(const DifficultyRating& difficulty) {
 }
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
-    float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f);
-    float grindscaler2 = CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
+    float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f)
+            * CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
 
     float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (NoteInfo.back().rowTime - 150.f) / 150.f), 0.9f, 1.f);
 
@@ -252,29 +252,23 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                                     downscale_low_accuracy_scores(tech, Scoregoal)
     };
 
-    float definitelycj = CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f);
-
     // chordjack
     float cj = difficulty.handstream;
 
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
     difficulty.jumpstream *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
     difficulty.handstream *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
-    difficulty.stamina *= shortstamdownscaler * 0.985f * lotquaddownscaler;
+    difficulty.stamina = CalcClamp(difficulty.stamina * shortstamdownscaler * 0.985f * lotquaddownscaler, 1.f,
+                                   max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream)) * 1.1f);
+    difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
-    cj = normalizer(cj, difficulty.handstream, 5.5f, 0.3f) * definitelycj * 1.025f;
-
-
+    cj = normalizer(cj, difficulty.handstream, 5.5f, 0.3f) * CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
 
     if (cj > difficulty.jack)
         difficulty.chordjack = cj;
     else
         difficulty.chordjack *= 0.9f;
 
-    difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
-
-    float stamclamp = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
-    difficulty.stamina = CalcClamp(difficulty.stamina, 1.f, stamclamp * 1.1f);
 
     dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
     float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
@@ -294,14 +288,14 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     temp_vec = skillset_vector(difficulty);
     float aDvg = mean(temp_vec) * 1.2f;
-    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler * grindscaler2, Scoregoal);
-    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal);
-    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal) * jumpthrill;
-    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler * grindscaler2, Scoregoal) * jumpthrill;
-    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler * grindscaler2, Scoregoal) * sqrt(jumpthrill) * 0.996f;
-    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler * grindscaler2, Scoregoal);
-    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler * grindscaler2, Scoregoal);
-    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal) * sqrt(jumpthrill);
+    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, Scoregoal);
+    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, Scoregoal);
+    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, Scoregoal) * jumpthrill;
+    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, Scoregoal) * jumpthrill;
+    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, Scoregoal) * sqrt(jumpthrill) * 0.996f;
+    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler, Scoregoal);
+    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, Scoregoal);
+    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, Scoregoal) * sqrt(jumpthrill);
 
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
@@ -309,7 +303,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);;
 
     float dating = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
-
 
     if (Scoregoal < dating) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
