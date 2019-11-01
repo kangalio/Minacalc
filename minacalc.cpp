@@ -322,22 +322,17 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     difficulty.stream = min(difficulty.stream, aDvg * 1.0416f) * grindscaler * grindscaler2;
     difficulty.stream = downscale_low_accuracy_scores(difficulty.stream, Scoregoal);
     difficulty.jumpstream = min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler * grindscaler2;
-    difficulty.jumpstream = downscale_low_accuracy_scores(difficulty.jumpstream, Scoregoal);
+    difficulty.jumpstream = downscale_low_accuracy_scores(difficulty.jumpstream, Scoregoal) * jumpthrill;
     difficulty.handstream = min(difficulty.handstream, aDvg) * grindscaler * grindscaler2;
-    difficulty.handstream = downscale_low_accuracy_scores(difficulty.handstream, Scoregoal);
+    difficulty.handstream = downscale_low_accuracy_scores(difficulty.handstream, Scoregoal) * jumpthrill;
     difficulty.stamina = min(difficulty.stamina, aDvg) * grindscaler * grindscaler2;
-    difficulty.stamina = downscale_low_accuracy_scores(difficulty.stamina, Scoregoal);
+    difficulty.stamina = downscale_low_accuracy_scores(difficulty.stamina, Scoregoal) * sqrt(jumpthrill) * 0.996f;
     difficulty.jack = min(difficulty.jack, aDvg) * grindscaler * grindscaler2;
     difficulty.jack = downscale_low_accuracy_scores(difficulty.jack, Scoregoal);
     difficulty.chordjack = min(difficulty.chordjack, aDvg) * grindscaler * grindscaler2;
     difficulty.chordjack = downscale_low_accuracy_scores(difficulty.chordjack, Scoregoal);
     difficulty.technical = min(difficulty.technical, aDvg * 1.0416f) * grindscaler * grindscaler2;
-    difficulty.technical = downscale_low_accuracy_scores(difficulty.technical, Scoregoal);
-
-    difficulty.jumpstream *= jumpthrill;
-    difficulty.handstream *= jumpthrill;
-    difficulty.stamina *= sqrt(jumpthrill) * 0.996f;
-    difficulty.technical *= sqrt(jumpthrill);
+    difficulty.technical = downscale_low_accuracy_scores(difficulty.technical, Scoregoal) * sqrt(jumpthrill);
 
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
