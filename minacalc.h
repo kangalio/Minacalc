@@ -123,17 +123,13 @@ public:
             0.93f; // What proportion of the total points are we trying to get
     void TotalMaxPoints(); // Counts up the total points and assigns it
 
-    /*	Recursive non-linear calculation function. A player skill is asserted
-    and the calcultor calls the calcinternal functions for each hand and adds up
-    the calculated average points attained per attempt at the given skill level
-    for the given chart. This function will iterate until the percentage
-    obtained is greater than or equal to the scoregoal variable. The output
-    accuracy resolution can be set by either reducing the initial increment or
-    by increasing the starting iteration. */
-    float Chisel(float pskill,
-                 float res,
-                 int iter,
-                 bool stam,
+    /*	Returns estimate of player skill needed to achieve score goal on chart.
+     *  The player_skill parameter gives an initial guess and floor for player skill.
+     *  Resolution relates to how precise the answer is.
+     *  Additional parameters give specific skill sets being tested for.*/
+    float Chisel(float player_skill,
+                 float resolution,
+                 bool stamina,
                  bool jack,
                  bool nps,
                  bool js,

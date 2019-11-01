@@ -207,11 +207,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     InitializeHands(NoteInfo);
     TotalMaxPoints();
-    float stream = Chisel(0.1f, 10.24f, 1, false, false, true, false, false);
-    float js = Chisel(0.1f, 10.24f, 1, false, false, true, true, false);
-    float hs = Chisel(0.1f, 10.24f, 1, false, false, true, false, true);
-    float tech = Chisel(0.1f, 10.24f, 1, false, false, false, false, false);
-    float jack = Chisel(0.1f, 10.24f, 1, false, true, true, false, false);
+    float stream = Chisel(0.1f, 10.24f, false, false, true, false, false);
+    float js = Chisel(0.1f, 10.24f, false, false, true, true, false);
+    float hs = Chisel(0.1f, 10.24f, false, false, true, false, true);
+    float tech = Chisel(0.1f, 10.24f, false, false, false, false, false);
+    float jack = Chisel(0.1f, 10.24f, false, true, true, false, false);
 
     float techbase = max(stream, jack);
     float techorig = tech;
@@ -220,13 +220,13 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float stam;
     if (stream > tech || js > tech || hs > tech)
         if (stream > js && stream > hs)
-            stam = Chisel(stream - 0.1f, 2.56f, 1, true, false, true, false, false);
+            stam = Chisel(stream - 0.1f, 2.56f, true, false, true, false, false);
         else if (js > hs)
-            stam = Chisel(js - 0.1f, 2.56f, 1, true, false, true, true, false);
+            stam = Chisel(js - 0.1f, 2.56f, true, false, true, true, false);
         else
-            stam = Chisel(hs - 0.1f, 2.56f, 1, true, false, true, false, true);
+            stam = Chisel(hs - 0.1f, 2.56f, true, false, true, false, true);
     else
-        stam = Chisel(tech - 0.1f, 2.56f, 1, true, false, false, false, false);
+        stam = Chisel(tech - 0.1f, 2.56f, true, false, false, false, false);
 
     js = normalizer(js, stream, 7.25f, 0.25f);
     hs = normalizer(hs, stream, 6.5f, 0.3f);
@@ -474,22 +474,25 @@ void Calc::TotalMaxPoints() {
         MaxPoints += static_cast<int>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
 }
 
-float Calc::Chisel(float pskill, float res, int iter, bool stam, bool jack, bool nps, bool js, bool hs) {
+float Calc::Chisel(float player_skill, float resolution, bool stamina, bool jack, bool nps, bool js, bool hs) {
     float gotpoints;
-    do {
-        if (pskill > 100.f)
-            return pskill;
-        pskill += res;
-        if (jack) {
-            gotpoints = MaxPoints - JackLoss(j0, pskill) - JackLoss(j1, pskill) - JackLoss(j2, pskill) - JackLoss(j3, pskill);
-        }
-        else
-            gotpoints = left_hand->CalcInternal(pskill, stam, nps, js, hs) + right_hand->CalcInternal(pskill, stam, nps, js, hs);
+    for (int iter = 1; iter <= 7; iter++) {
+        do {
+            if (player_skill > 100.f)
+                return player_skill;
+            player_skill += resolution;
+            if (jack) {
+                gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) -
+                            JackLoss(j3, player_skill);
+            } else
+                gotpoints = left_hand->CalcInternal(player_skill, stamina, nps, js, hs) +
+                            right_hand->CalcInternal(player_skill, stamina, nps, js, hs);
 
-    } while (gotpoints / MaxPoints < Scoregoal);
-    if (iter == 7)
-        return pskill;
-    return Chisel(pskill - res, res / 2.f, iter + 1, stam, jack, nps, js, hs);
+        } while (gotpoints / MaxPoints < Scoregoal);
+        player_skill -= resolution;
+        resolution /= 2.f;
+    }
+    return player_skill + 2.f * resolution;
 }
 
 
