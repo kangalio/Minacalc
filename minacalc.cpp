@@ -40,13 +40,10 @@ inline float cv(vector<float> &input) {
     return sqrt(sd / input.size()) / average;
 }
 
-inline float downscale_low_accuracy_scores(float& f, float sg) {
-    CalcClamp(f, 0.f, 100.f);
+inline float downscale_low_accuracy_scores(float f, float sg) {
     if (sg >= 0.93f)
         return f;
-    float output = f * 1 - sqrt(0.93f - sg);
-    CalcClamp(f, 0.f, 100.f);
-    return output;
+    return min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
 }
 
 // Specifically for pattern modifiers as the neutral value is 1
@@ -317,22 +314,14 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     temp_vec = skillset_vector(difficulty);
     float aDvg = mean(temp_vec) * 1.2f;
-    difficulty.overall = min(difficulty.overall, aDvg) * grindscaler * grindscaler2;
-    difficulty.overall = downscale_low_accuracy_scores(difficulty.overall, Scoregoal);
-    difficulty.stream = min(difficulty.stream, aDvg * 1.0416f) * grindscaler * grindscaler2;
-    difficulty.stream = downscale_low_accuracy_scores(difficulty.stream, Scoregoal);
-    difficulty.jumpstream = min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler * grindscaler2;
-    difficulty.jumpstream = downscale_low_accuracy_scores(difficulty.jumpstream, Scoregoal) * jumpthrill;
-    difficulty.handstream = min(difficulty.handstream, aDvg) * grindscaler * grindscaler2;
-    difficulty.handstream = downscale_low_accuracy_scores(difficulty.handstream, Scoregoal) * jumpthrill;
-    difficulty.stamina = min(difficulty.stamina, aDvg) * grindscaler * grindscaler2;
-    difficulty.stamina = downscale_low_accuracy_scores(difficulty.stamina, Scoregoal) * sqrt(jumpthrill) * 0.996f;
-    difficulty.jack = min(difficulty.jack, aDvg) * grindscaler * grindscaler2;
-    difficulty.jack = downscale_low_accuracy_scores(difficulty.jack, Scoregoal);
-    difficulty.chordjack = min(difficulty.chordjack, aDvg) * grindscaler * grindscaler2;
-    difficulty.chordjack = downscale_low_accuracy_scores(difficulty.chordjack, Scoregoal);
-    difficulty.technical = min(difficulty.technical, aDvg * 1.0416f) * grindscaler * grindscaler2;
-    difficulty.technical = downscale_low_accuracy_scores(difficulty.technical, Scoregoal) * sqrt(jumpthrill);
+    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler * grindscaler2, Scoregoal);
+    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal);
+    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal) * jumpthrill;
+    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler * grindscaler2, Scoregoal) * jumpthrill;
+    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler * grindscaler2, Scoregoal) * sqrt(jumpthrill) * 0.996f;
+    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler * grindscaler2, Scoregoal);
+    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler * grindscaler2, Scoregoal);
+    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler * grindscaler2, Scoregoal) * sqrt(jumpthrill);
 
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
