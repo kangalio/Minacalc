@@ -214,8 +214,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float jack = Chisel(0.1f, 10.24f, false, true, true, false, false);
 
     float techbase = max(stream, jack);
-    float techorig = tech;
-    tech = CalcClamp((tech / techbase)*tech, techorig * 0.85f, techorig);
+    tech = CalcClamp((tech / techbase)*tech, tech * 0.85f, tech);
 
     float stam;
     if (stream > tech || js > tech || hs > tech)
@@ -300,7 +299,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
     vector<float> temp = skillset_vector(difficulty);
-    difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);;
+    difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);
 
     float dating = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
 
