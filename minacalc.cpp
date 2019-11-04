@@ -399,16 +399,16 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
 
     left_hand = new Hand;
     left_hand->InitHand(left_fingers[0], left_fingers[1]);
-    left_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 0, 1);
-    left_hand->anchorscale = Anchorscaler(NoteInfo, 0, 1);
+    left_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
+    left_hand->anchorscale = Anchorscaler(NoteInfo, 1, 2);
     left_hand->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
     left_hand->hsscale = HSDownscaler(NoteInfo);
     left_hand->jumpscale = JumpDownscaler(NoteInfo);
 
     right_hand = new Hand;
     right_hand->InitHand(right_fingers[0], right_fingers[1]);
-    right_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 2, 3);
-    right_hand->anchorscale = Anchorscaler(NoteInfo, 2, 3);
+    right_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
+    right_hand->anchorscale = Anchorscaler(NoteInfo, 4, 8);
     right_hand->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
     right_hand->hsscale = left_hand->hsscale;
     right_hand->jumpscale = left_hand->jumpscale;
@@ -594,31 +594,25 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 
 
 // pattern modifiers
-vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int t1, int t2) {
+vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int firstNote, int secondNote) {
     vector<float> output(nervIntervals.size());
-    int firstNote = 1 << t1;
-    int secondNote = 1 << t2;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        if (nervIntervals[i].empty())
-            output[i] = 1.f;
-        else {
-            int taps = 0;
-            int jumptaps = 0;
-            for (int row : nervIntervals[i]) {
-                if (NoteInfo[row].notes & firstNote) {
+        int taps = 0;
+        int jumptaps = 0;
+        for (int row : nervIntervals[i]) {
+            if (NoteInfo[row].notes & firstNote) {
+                ++taps;
+                if (NoteInfo[row].notes & secondNote) {
+                    jumptaps += 2;
                     ++taps;
-                    if (NoteInfo[row].notes & secondNote) {
-                        jumptaps += 2;
-                        ++taps;
-                    }
                 }
             }
-            output[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
-
-            if (logpatterns)
-                cout << "ohj " << output[i] << endl;
         }
+        output[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
+
+        if (logpatterns)
+            cout << "ohj " << output[i] << endl;
     }
 
     if (SmoothPatterns)
@@ -627,33 +621,27 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int t1, i
 }
 
 // pattern modifiers
-vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int t1, int t2) {
+vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int firstNote, int secondNote) {
     vector<float> output(nervIntervals.size());
-    int firstNote = 1 << t1;
-    int secondNote = 1 << t2;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        if (nervIntervals[i].empty())
-            output[i] = 1.f;
-        else {
-            int lcol = 0;
-            int rcol = 0;
-            for (int row : nervIntervals[i]) {
-                if (NoteInfo[row].notes & firstNote)
-                    ++lcol;
-                if (NoteInfo[row].notes & secondNote)
-                    ++rcol;
-            }
-            bool anyzero = lcol == 0 || rcol == 0;
-            output[i] = CalcClamp(anyzero ? 1.f : sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
-
-            float stupidthing = (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
-            dumbvalue += stupidthing;
-            ++dumbcounter;
-
-            if (logpatterns)
-                cout << "an " << output[i] << endl;
+        int lcol = 0;
+        int rcol = 0;
+        for (int row : nervIntervals[i]) {
+            if (NoteInfo[row].notes & firstNote)
+                ++lcol;
+            if (NoteInfo[row].notes & secondNote)
+                ++rcol;
         }
+        bool anyzero = lcol == 0 || rcol == 0;
+        output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
+
+        float stupidthing = (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
+        dumbvalue += stupidthing;
+        ++dumbcounter;
+
+        if (logpatterns)
+            cout << "an " << output[i] << endl;
     }
 
     if (SmoothPatterns)
