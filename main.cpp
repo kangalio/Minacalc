@@ -2,6 +2,9 @@
 #include "smloader.h"
 #include <iostream>
 
+using std::cout;
+using std::endl;
+
 int main() {
     ifstream sm_file;
     sm_file.open("../chart.sm");
@@ -11,17 +14,17 @@ int main() {
             cout << note.notes << " " << note.rowTime << endl;
         }
         DifficultyRating x = MinaSDCalc(jeff, 1.f, 0.93f);
-        std::cout << "Overall: " << x.overall << std::endl;
-        std::cout << "Stream: " << x.stream << std::endl;
-        std::cout << "JumpStream: " << x.jumpstream << std::endl;
-        std::cout << "HandStream: " << x.handstream << std::endl;
-        std::cout << "Stamina: " << x.stamina << std::endl;
-        std::cout << "Jackspeed: " << x.jack << std::endl;
-        std::cout << "Chordjack: " << x.chordjack << std::endl;
-        std::cout << "Technical: " << x.technical << std::endl;
+        cout << "Overall: " << x.overall << endl;
+        cout << "Stream: " << x.stream << endl;
+        cout << "JumpStream: " << x.jumpstream << endl;
+        cout << "HandStream: " << x.handstream << endl;
+        cout << "Stamina: " << x.stamina << endl;
+        cout << "Jackspeed: " << x.jack << endl;
+        cout << "Chordjack: " << x.chordjack << endl;
+        cout << "Technical: " << x.technical << endl;
     }
     else {
-        cout << "failed to open the file" << std::endl;
+        cout << "failed to open the file" << endl;
     }
     sm_file.close();
     return 0;

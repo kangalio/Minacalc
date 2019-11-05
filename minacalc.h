@@ -3,8 +3,6 @@
 #include <vector>
 #include <map>
 
-using namespace std;
-
 // For internal, must be preprocessor defined
 #if defined(MINADLL_COMPILE) && defined(_WIN32)
 #define MINACALC_API __declspec(dllexport)
@@ -15,11 +13,11 @@ using namespace std;
 #define MINACALC_API
 #endif
 
-typedef vector<DifficultyRating> MinaSD;
+typedef std::vector<DifficultyRating> MinaSD;
 
-typedef vector<vector<float>> Finger;
-typedef vector<Finger> ProcessedFingers;
-typedef vector<float> JackSeq;
+typedef std::vector<std::vector<float>> Finger;
+typedef std::vector<Finger> ProcessedFingers;
+typedef std::vector<float> JackSeq;
 
 /*	The difficulties of each hand tend to be independent from one another. This
 is not absolute, as in the case of polyrhythm trilling. However the goal of the
@@ -35,7 +33,7 @@ public:
     /*	Spits out a rough estimate of difficulty based on the ms values within
     the interval The vector passed to it is the vector of ms values within each
     interval, and not the full vector of intervals. */
-    static float CalcMSEstimate(vector<float>& input);
+    static float CalcMSEstimate(std::vector<float>& input);
 
     // Wraps the three prepatory functions below
     void InitHand(Finger& f1, Finger& f2);
@@ -55,7 +53,7 @@ public:
     wane. Experience in both gameplay and algorithm testing has shown the
     appropriate value to be around 0.8. The multiplier is scaled to the
     proportionate difference in player skill. */
-    vector<float> StamAdjust(float x, vector<float> diff);
+    std::vector<float> StamAdjust(float x, std::vector<float> diff);
 
     /*	For a given player skill level x, invokes the function used by wife
     scoring to assert the average of the distribution of point gain for each
@@ -63,14 +61,14 @@ public:
     of points achieved by this hand. */
     float CalcInternal(float x, bool stam, bool nps, bool js, bool hs);
 
-    vector<float> ohjumpscale;
-    vector<float> rollscale;
-    vector<float> hsscale;
-    vector<float> jumpscale;
-    vector<float> anchorscale;
-    vector<int> v_itvpoints;	// Point allotment for each interval
-    vector<float> v_itvNPSdiff; // Calculated difficulty for each interval
-    vector<float> v_itvMSdiff;  // Calculated difficulty for each interval
+    std::vector<float> ohjumpscale;
+    std::vector<float> rollscale;
+    std::vector<float> hsscale;
+    std::vector<float> jumpscale;
+    std::vector<float> anchorscale;
+    std::vector<int> v_itvpoints;	// Point allotment for each interval
+    std::vector<float> v_itvNPSdiff; // Calculated difficulty for each interval
+    std::vector<float> v_itvMSdiff;  // Calculated difficulty for each interval
 private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
@@ -93,28 +91,28 @@ public:
     hand objects and then runs the chisel function under varying circumstances
     to estimate difficulty for each different skillset. Currently only
     overall/stamina are being produced. */
-    DifficultyRating CalcMain(const vector<NoteInfo>& NoteInfo);
+    DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo);
 
     // redo these asap
-    static vector<float> JackStamAdjust(vector<float>& j, float x);
-    static float JackLoss(vector<float>& j, float x);
-    JackSeq SequenceJack(const vector<NoteInfo>& NoteInfo, int t);
+    static std::vector<float> JackStamAdjust(std::vector<float>& j, float x);
+    static float JackLoss(std::vector<float>& j, float x);
+    JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, int t);
 
     int numitv;
-    int fastwalk(const vector<NoteInfo>& NoteInfo);
+    int fastwalk(const std::vector<NoteInfo>& NoteInfo);
 
     /*	Splits up the chart by each hand and calls ProcessFinger on each "track"
     before passing
     the results to the hand initialization functions. Also passes the input
     timingscale value. */
-    void InitializeHands(const vector<NoteInfo>& NoteInfo);
+    void InitializeHands(const std::vector<NoteInfo>& NoteInfo);
 
     /*	Slices the track into predefined intervals of time. All taps within each
     interval have their ms values from the last note in the same column
     calculated and the result is spit out
     into a new Finger object, or vector of vectors of floats (ms from last note
     in the track). */
-    Finger ProcessFinger(const vector<NoteInfo>& NoteInfo, int t);
+    Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, int t);
 
     // Derivative calc params
     float MusicRate = 1.f;
@@ -135,15 +133,15 @@ public:
                  bool js,
                  bool hs);
 
-    vector<float> OHJumpDownscaler(const vector<NoteInfo>& NoteInfo,
+    std::vector<float> OHJumpDownscaler(const std::vector<NoteInfo>& NoteInfo,
                                    int t1,
                                    int t2);
-    vector<float> Anchorscaler(const vector<NoteInfo>& NoteInfo,
+    std::vector<float> Anchorscaler(const std::vector<NoteInfo>& NoteInfo,
                                int t1,
                                int t2);
-    vector<float> HSDownscaler(const vector<NoteInfo>& NoteInfo);
-    vector<float> JumpDownscaler(const vector<NoteInfo>& NoteInfo);
-    vector<float> RollDownscaler(Finger f1, Finger f2);
+    std::vector<float> HSDownscaler(const std::vector<NoteInfo>& NoteInfo);
+    std::vector<float> JumpDownscaler(const std::vector<NoteInfo>& NoteInfo);
+    std::vector<float> RollDownscaler(Finger f1, Finger f2);
     void Purge();
     float techscaler = 0.97f;
 
@@ -151,7 +149,7 @@ public:
     Hand* right_hand = new Hand;
 
 private:
-    vector<vector<int>> nervIntervals;
+    std::vector<std::vector<int>> nervIntervals;
 
     // Const calc params
     const bool SmoothPatterns =
@@ -169,11 +167,11 @@ private:
 };
 
 MINACALC_API DifficultyRating
-MinaSDCalc(const vector<NoteInfo>& NoteInfo,
+MinaSDCalc(const std::vector<NoteInfo>& NoteInfo,
            float musicrate,
            float goal);
 MINACALC_API MinaSD
-MinaSDCalc(const vector<NoteInfo>& NoteInfo);
+MinaSDCalc(const std::vector<NoteInfo>& NoteInfo);
 MINACALC_API int
 GetCalcVersion();
 
