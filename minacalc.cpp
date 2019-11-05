@@ -528,25 +528,22 @@ void Hand::InitPoints(Finger& f1, Finger& f2) {
         v_itvpoints.emplace_back(static_cast<int>(f1[i].size()) + static_cast<int>(f2[i].size()));
 }
 
-vector<float> Hand::StamAdjust(float x, vector<float> diff) {
-    vector<float> output(diff.size());
+void Hand::StamAdjust(float x, vector<float>& diff) {
     float floor = 1.f;			// stamina multiplier min (increases as chart advances)
     float mod = 1.f;			// mutliplier
-
     float avs1;
     float avs2 = 0.f;
 
-    for (size_t i = 0; i < diff.size(); i++) {
+    for (float & i : diff) {
         avs1 = avs2;
-        avs2 = diff[i];
+        avs2 = i;
         float ebb = (avs1 + avs2) / 2;
         mod += ((ebb / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
         mod = CalcClamp(mod, floor, ceil);
-        output[i] = diff[i] * mod;
+        i *= mod;
     }
-    return output;
 }
 
 float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
@@ -568,18 +565,17 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
             diff[i] = diff[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i];
     }
 
-    const vector<float>& v = stam ? StamAdjust(x, diff) : diff;
-    //dum = v;
+    if (stam)
+        StamAdjust(x, diff);
     float output = 0.f;
-    for (size_t i = 0; i < v.size(); i++) {
-        if (x > v[i])
+    for (size_t i = 0; i < diff.size(); i++) {
+        if (x > diff[i])
             output += v_itvpoints[i];
         else
-            output += v_itvpoints[i] * pow(x / v[i], 1.8f);
+            output += v_itvpoints[i] * pow(x / diff[i], 1.8f);
     }
     return output;
 }
-
 
 // pattern modifiers
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int firstNote, int secondNote) {

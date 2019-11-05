@@ -53,7 +53,7 @@ public:
     wane. Experience in both gameplay and algorithm testing has shown the
     appropriate value to be around 0.8. The multiplier is scaled to the
     proportionate difference in player skill. */
-    std::vector<float> StamAdjust(float x, std::vector<float> diff);
+    void StamAdjust(float x, std::vector<float>& diff);
 
     /*	For a given player skill level x, invokes the function used by wife
     scoring to assert the average of the distribution of point gain for each
