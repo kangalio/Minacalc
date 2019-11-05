@@ -2,13 +2,16 @@
 //
 
 #include "minacalc.h"
+#include <cmath>
 #include <iostream>
 #include <algorithm>
 #include <thread>
-#include <mutex>
-#include <cmath>
 
-using namespace std;
+using std::vector;
+using std::min;
+using std::max;
+using std::sqrt;
+using std::pow;
 
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
@@ -96,7 +99,7 @@ inline float AggregateScores(vector<float>& invector, float rating, float res, i
         rating += res;
         sum = 0.0f;
         for (float i : invector) {
-            sum += 2.f / erfc(0.5f*(i - rating)) - 1.f;
+            sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
         }
     } while (3 < sum);
     if (iter == 11)
@@ -612,7 +615,7 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int first
         output[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
 
         if (logpatterns)
-            cout << "ohj " << output[i] << endl;
+            std::cout << "ohj " << output[i] << std::endl;
     }
 
     if (SmoothPatterns)
@@ -641,7 +644,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int firstNote
         ++dumbcounter;
 
         if (logpatterns)
-            cout << "an " << output[i] << endl;
+            std::cout << "an " << output[i] << std::endl;
     }
 
     if (SmoothPatterns)
@@ -672,7 +675,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
             output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps) / 3.f))) : 1.f;
 
             if (logpatterns)
-                cout << "hs " << output[i] << endl;
+                std::cout << "hs " << output[i] << std::endl;
         }
     }
 
@@ -703,7 +706,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
             output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jumps) / static_cast<float>(taps) / 6.f))) : 1.f;
 
             if (logpatterns)
-                cout << "ju " << output[i] << endl;
+                std::cout << "ju " << output[i] << std::endl;
         }
     }
     if (SmoothPatterns)
@@ -739,7 +742,7 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
             output[i] = interval_cv*interval_cv*interval_cv;
 
         if (logpatterns)
-            cout << "ro " << output[i] << endl;
+            std::cout << "ro " << output[i] << std::endl;
     }
 
     if (SmoothPatterns)
@@ -808,7 +811,7 @@ void Calc::Purge() {
 
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
-    unique_ptr<Calc> doot = make_unique<Calc>();
+    std::unique_ptr<Calc> doot = std::make_unique<Calc>();
     doot->MusicRate = musicrate;
     goal = CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     doot->Scoregoal = goal;
