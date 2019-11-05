@@ -712,38 +712,33 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
 
 
 vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
-    vector<float> output(f1.size());
+    vector<float> output(f1.size());    //this is slightly problematic because if one finger is longer than the other
+                                        //you could potentially have different results with f1 and f2 switched
     for (size_t i = 0; i < f1.size(); i++) {
-        if (f1[i].empty() && f2[i].empty())
+        if (f1[i].size() + f2[i].size() <= 1) {
             output[i] = 1.f;
-        else {
-            vector<float> cvint;
-            for (float & ii : f1[i])
-                cvint.emplace_back(ii);
-            for (float & ii : f2[i])
-                cvint.emplace_back(ii);
-
-            float mmm = mean(cvint);
-
-            for (float & i : cvint)
-                i = mmm / i < 0.6f ? mmm : i;
-
-
-            if (cvint.size() == 1) {
-                output[i] = 1.f;
-                continue;
-            }
-
-            float dacv = cv(cvint);
-            if (dacv >= 0.15)
-                output[i] = sqrt(sqrt(0.85f + dacv));
-            else
-                output[i] = pow(0.85f + dacv, 3);
-            output[i] = CalcClamp(output[i], 0.f, 1.075f);
-
-            if (logpatterns)
-                cout << "ro " << output[i] << endl;
+            continue;
         }
+        vector<float> cvint;
+        for (float & ii : f1[i])
+            cvint.emplace_back(ii);
+        for (float & ii : f2[i])
+            cvint.emplace_back(ii);
+
+        float interval_mean = mean(cvint);
+
+        for (float & note : cvint)
+            if (interval_mean / note < 0.6f)
+                note = interval_mean;
+
+        float interval_cv = cv(cvint) + 0.85f;
+        if (interval_cv >= 1.0f)
+            output[i] = min(sqrt(sqrt(interval_cv)), 1.075f);
+        else
+            output[i] = interval_cv*interval_cv*interval_cv;
+
+        if (logpatterns)
+            cout << "ro " << output[i] << endl;
     }
 
     if (SmoothPatterns)
