@@ -13,6 +13,11 @@ using std::max;
 using std::sqrt;
 using std::pow;
 
+const int left = 1;
+const int down = 2;
+const int up = 4;
+const int right = 8;
+
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
 template<typename T>
@@ -113,11 +118,6 @@ float normalizer(float x, float y, float z1, float z2) {
 }
 
 float jumpprop(const vector<NoteInfo>& NoteInfo) {
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
-
     int taps = 0;
     int jumps = 0;
 
@@ -132,11 +132,6 @@ float jumpprop(const vector<NoteInfo>& NoteInfo) {
 }
 
 float handprop(const vector<NoteInfo>& NoteInfo) {
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
-
     int taps = 0;
     int hands = 0;
 
@@ -151,11 +146,6 @@ float handprop(const vector<NoteInfo>& NoteInfo) {
 }
 
 float quadprop(const vector<NoteInfo>& NoteInfo) {
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
-
     int taps = 0;
     int quads = 0;
 
@@ -437,13 +427,8 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
     vector<float> CurrentInterval;
     vector<int> itvnervtmp;
     vector<vector<int>> itvnerv(numitv);
-
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
-
     int column = 1 << t;
+
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / MusicRate;
 
@@ -655,10 +640,6 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int firstNote
 
 vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
@@ -686,10 +667,6 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
 
 vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
-    int left = 1;
-    int down = 2;
-    int up = 4;
-    int right = 8;
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         if (nervIntervals[i].empty())
