@@ -61,14 +61,9 @@ public:
     of points achieved by this hand. */
     float CalcInternal(float x, bool stam, bool nps, bool js, bool hs);
 
-    std::vector<float> ohjumpscale;
-    std::vector<float> rollscale;
-    std::vector<float> hsscale;
-    std::vector<float> jumpscale;
-    std::vector<float> anchorscale;
+    std::vector<float> ohjumpscale, rollscale, hsscale, jumpscale, anchorscale;
     std::vector<int> v_itvpoints;	// Point allotment for each interval
-    std::vector<float> v_itvNPSdiff; // Calculated difficulty for each interval
-    std::vector<float> v_itvMSdiff;  // Calculated difficulty for each interval
+    std::vector<float> v_itvNPSdiff, v_itvMSdiff;  // Calculated difficulty for each interval
 private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
