@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <thread>
+#include <numeric>
 
 using std::vector;
 using std::min;
@@ -30,12 +31,8 @@ T CalcClamp(T x, T l, T h) {
 return x;
 }
 
-inline float mean(vector<float>& input) {
-    float sum = 0.f;
-    for (float i : input)
-        sum += i;
-
-    return sum / input.size();
+inline float mean(vector<float>& v) {
+    return std::accumulate(begin(v), end(v), 0.f) / v.size();
 }
 
 // Coefficient of variation
