@@ -254,10 +254,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     cj = normalizer(cj, difficulty.handstream, 5.5f, 0.3f) * CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
 
+    bool downscale_chordjack_at_end = false;
     if (cj > difficulty.jack)
         difficulty.chordjack = cj;
     else
-        difficulty.chordjack *= 0.9f;
+        downscale_chordjack_at_end = true;
 
 
     dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
@@ -291,6 +292,10 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     vector<float> temp = skillset_vector(difficulty);
     difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);
+
+    if (downscale_chordjack_at_end) {
+        difficulty.chordjack *= 0.9f;
+    }
 
     float dating = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
 
@@ -553,13 +558,14 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 
     for (size_t i = 0; i < diff.size(); ++i) {
         if (hs)
-            diff[i] = diff[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
+            diff[i] *= anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
         else if (js)
-            diff[i] = diff[i] * pow(hsscale[i], 2) * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
+            diff[i] *= hsscale[i] * hsscale[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
         else if (nps)
-            diff[i] = diff[i] * pow(hsscale[i], 3) * anchorscale[i] * pow(ohjumpscale[i], 2) * rollscale[i] * pow(jumpscale[i], 2);
+            diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * anchorscale[i] * ohjumpscale[i] * ohjumpscale[i]
+                    * rollscale[i] * jumpscale[i] * jumpscale[i];
         else
-            diff[i] = diff[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i];
+            diff[i] *= anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i];
     }
 
     if (stam)
