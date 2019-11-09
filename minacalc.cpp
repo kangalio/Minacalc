@@ -114,46 +114,18 @@ float normalizer(float x, float y, float z1, float z2) {
     return x * z2 * norm + x * (1.f - z2);
 }
 
-float jumpprop(const vector<NoteInfo>& NoteInfo) {
+float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
     int taps = 0;
-    int jumps = 0;
+    int chords = 0;
 
-    for (auto r : NoteInfo) {
-        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
+    for (auto row : NoteInfo) {
+        int notes = (row.notes & left ? 1 : 0) + (row.notes & down ? 1 : 0) + (row.notes & up ? 1 : 0) + (row.notes & right ? 1 : 0);
         taps += notes;
-        if (notes == 2)
-            jumps += notes;
+        if (notes == chord_size)
+            chords += notes;
     }
 
-    return static_cast<float>(jumps) / static_cast<float>(taps);
-}
-
-float handprop(const vector<NoteInfo>& NoteInfo) {
-    int taps = 0;
-    int hands = 0;
-
-    for (auto r : NoteInfo) {
-        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
-        taps += notes;
-        if (notes == 3)
-            hands += notes;
-    }
-
-    return static_cast<float>(hands) / static_cast<float>(taps);
-}
-
-float quadprop(const vector<NoteInfo>& NoteInfo) {
-    int taps = 0;
-    int quads = 0;
-
-    for (auto r : NoteInfo) {
-        int notes = (r.notes & left ? 1 : 0) + (r.notes & down ? 1 : 0) + (r.notes & up ? 1 : 0) + (r.notes & right ? 1 : 0);
-        taps += notes;
-        if (notes == 4)
-            quads += notes;
-    }
-
-    return static_cast<float>(quads) / static_cast<float>(taps);
+    return static_cast<float>(chords) / static_cast<float>(taps);
 }
 
 vector<float> skillset_vector(DifficultyRating& difficulty) {
@@ -183,15 +155,15 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (NoteInfo.back().rowTime - 150.f) / 150.f), 0.9f, 1.f);
 
-    float jprop = jumpprop(NoteInfo);
+    float jprop = chord_proportion(NoteInfo, 2);
     float nojumpsdownscaler = CalcClamp(0.8f + (0.2f * (jprop + 0.5f)), 0.8f, 1.f);
     float manyjumpsdownscaler = CalcClamp(1.43f - jprop, 0.85f, 1.f);
 
-    float hprop = handprop(NoteInfo);
+    float hprop = chord_proportion(NoteInfo, 3);
     float nohandsdownscaler = CalcClamp(0.8f + (0.2f * (hprop + 0.75f)), 0.8f, 1.f);
     float allhandsdownscaler = CalcClamp(1.23f - hprop, 0.85f, 1.f);
 
-    float qprop = quadprop(NoteInfo);
+    float qprop = chord_proportion(NoteInfo, 4);
     float lotquaddownscaler = CalcClamp(1.13f - qprop, 0.85f, 1.f);
 
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
@@ -243,7 +215,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     };
 
     // chordjack
-    float cj = difficulty.handstream;
+    chordjack = difficulty.handstream;
 
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
     difficulty.jumpstream *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
@@ -252,11 +224,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
                                    max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream)) * 1.1f);
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
-    cj = normalizer(cj, difficulty.handstream, 5.5f, 0.3f) * CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
+    chordjack = normalizer(chordjack, difficulty.handstream, 5.5f, 0.3f) * CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
 
     bool downscale_chordjack_at_end = false;
-    if (cj > difficulty.jack)
-        difficulty.chordjack = cj;
+    if (chordjack > difficulty.jack)
+        difficulty.chordjack = chordjack;
     else
         downscale_chordjack_at_end = true;
 
