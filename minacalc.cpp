@@ -420,7 +420,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
             last = scaledtime;
         }
 
-        if (t == 0 && (NoteInfo[i].notes & left || NoteInfo[i].notes & down || NoteInfo[i].notes & up || NoteInfo[i].notes & right))
+        if (t == 0 && NoteInfo[i].notes != 0)
         {
             itvnervtmp.emplace_back(i);
         }
