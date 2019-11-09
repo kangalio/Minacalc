@@ -345,7 +345,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
 int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
     int Interval = 0;
     for (auto i : NoteInfo) {
-        if (i.rowTime / MusicRate >= Interval * IntervalSpan)
+        if (i.rowTime / MusicRate >= (float)Interval * IntervalSpan)
             ++Interval;
     }
     return Interval;
@@ -406,7 +406,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / MusicRate;
 
-        if (scaledtime >= Interval * IntervalSpan) {
+        if (scaledtime >= (float)Interval * IntervalSpan) {
             AllIntervals[Interval - 1] = CurrentInterval;
             CurrentInterval.clear();
 
@@ -433,7 +433,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
 
 void Calc::TotalMaxPoints() {
     for (size_t i = 0; i < left_hand->v_itvpoints.size(); i++)
-        MaxPoints += static_cast<int>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
+        MaxPoints += static_cast<float>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
 }
 
 float Calc::Chisel(float player_skill, float resolution, bool stamina, bool jack, bool nps, bool js, bool hs) {
@@ -778,7 +778,7 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
 
     if (!NoteInfo.empty())
         for (int i = lower_rate; i < upper_rate; i++)
-            allrates.emplace_back(MinaSDCalc(NoteInfo,i / 10.f, 0.93f));
+            allrates.emplace_back(MinaSDCalc(NoteInfo,(float)i / 10.f, 0.93f));
     else {
         DifficultyRating output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
         for (int i = lower_rate; i < upper_rate; i++)
