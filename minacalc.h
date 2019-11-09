@@ -140,8 +140,8 @@ public:
     void Purge();
     float techscaler = 0.97f;
 
-    Hand* left_hand = new Hand;
-    Hand* right_hand = new Hand;
+    Hand* left_hand;
+    Hand* right_hand;
 
 private:
     std::vector<std::vector<int>> nervIntervals;
