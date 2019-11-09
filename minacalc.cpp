@@ -114,12 +114,16 @@ float normalizer(float x, float y, float z1, float z2) {
     return x * z2 * norm + x * (1.f - z2);
 }
 
+int column_count(int note) {
+    return (note & left ? 1 : 0) + (note & down ? 1 : 0) + (note & up ? 1 : 0) + (note & right ? 1 : 0);
+}
+
 float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
     int taps = 0;
     int chords = 0;
 
     for (auto row : NoteInfo) {
-        int notes = (row.notes & left ? 1 : 0) + (row.notes & down ? 1 : 0) + (row.notes & up ? 1 : 0) + (row.notes & right ? 1 : 0);
+        int notes = column_count(row.notes);
         taps += notes;
         if (notes == chord_size)
             chords += notes;
@@ -619,7 +623,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
             int taps = 0;
             int handtaps = 0;
             for (int row : nervIntervals[i]) {
-                int notes = (NoteInfo[row].notes & left ? 1 : 0) + (NoteInfo[row].notes & down ? 1 : 0) + (NoteInfo[row].notes & up ? 1 : 0) + (NoteInfo[row].notes & right ? 1 : 0);
+                int notes = column_count(NoteInfo[row].notes);
                 taps += notes;
                 if (notes == 3)
                     handtaps += notes;
@@ -646,7 +650,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
             int taps = 0;
             int jumps = 0;
             for (int row : nervIntervals[i]) {
-                int notes = (NoteInfo[row].notes & left ? 1 : 0) + (NoteInfo[row].notes & down ? 1 : 0) + (NoteInfo[row].notes & up ? 1 : 0) + (NoteInfo[row].notes & right ? 1 : 0);
+                int notes = column_count(NoteInfo[row].notes);
                 taps += notes;
                 if (notes == 2)
                     jumps += notes;
