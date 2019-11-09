@@ -14,11 +14,6 @@ using std::max;
 using std::sqrt;
 using std::pow;
 
-const int left = 1;
-const int down = 2;
-const int up = 4;
-const int right = 8;
-
 #define SAFE_DELETE(p){ delete p; p = NULL;}
 
 template<typename T>
@@ -115,7 +110,7 @@ float normalizer(float x, float y, float z1, float z2) {
 }
 
 int column_count(int note) {
-    return (note & left ? 1 : 0) + (note & down ? 1 : 0) + (note & up ? 1 : 0) + (note & right ? 1 : 0);
+    return note % 2 + note / 2 % 2 + note / 4 % 2 + note / 8 % 2;
 }
 
 float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
