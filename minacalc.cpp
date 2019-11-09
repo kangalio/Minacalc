@@ -612,22 +612,18 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        if (nervIntervals[i].empty())
-            output[i] = 1.f;
-        else {
-            int taps = 0;
-            int handtaps = 0;
-            for (int row : nervIntervals[i]) {
-                int notes = column_count(NoteInfo[row].notes);
-                taps += notes;
-                if (notes == 3)
-                    handtaps += notes;
-            }
-            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps) / 3.f))) : 1.f;
-
-            if (logpatterns)
-                std::cout << "hs " << output[i] << std::endl;
+        int taps = 0;
+        int handtaps = 0;
+        for (int row : nervIntervals[i]) {
+            int notes = column_count(NoteInfo[row].notes);
+            taps += notes;
+            if (notes == 3)
+                handtaps++;
         }
+        output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps)))) : 1.f;
+
+        if (logpatterns)
+            std::cout << "hs " << output[i] << std::endl;
     }
 
     if (SmoothPatterns)
@@ -639,22 +635,18 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        if (nervIntervals[i].empty())
-            output[i] = 1.f;
-        else {
-            int taps = 0;
-            int jumps = 0;
-            for (int row : nervIntervals[i]) {
-                int notes = column_count(NoteInfo[row].notes);
-                taps += notes;
-                if (notes == 2)
-                    jumps += notes;
-            }
-            output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jumps) / static_cast<float>(taps) / 6.f))) : 1.f;
-
-            if (logpatterns)
-                std::cout << "ju " << output[i] << std::endl;
+        int taps = 0;
+        int jumps = 0;
+        for (int row : nervIntervals[i]) {
+            int notes = column_count(NoteInfo[row].notes);
+            taps += notes;
+            if (notes == 2)
+                jumps++;
         }
+        output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jumps) / static_cast<float>(taps) / 3.f))) : 1.f;
+
+        if (logpatterns)
+            std::cout << "ju " << output[i] << std::endl;
     }
     if (SmoothPatterns)
         PatternSmooth(output);
