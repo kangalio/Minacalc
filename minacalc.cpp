@@ -660,60 +660,8 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
 
 
 void Calc::Purge() {
-    vector<float> tmp1;
-    vector<float> tmp2;
-    vector<float> tmp3;
-    vector<float> tmp4;
-
-    j0.swap(tmp1);
-    j1.swap(tmp2);
-    j2.swap(tmp3);
-    j3.swap(tmp4);
-
-    j0.shrink_to_fit();
-    j1.shrink_to_fit();
-    j2.shrink_to_fit();
-    j3.shrink_to_fit();
-
-    vector<float> l1;
-    vector<float> l2;
-    vector<float> l3;
-    vector<float> l4;
-    vector<float> l5;
-
-    left_hand->ohjumpscale.swap(l1);
-    left_hand->anchorscale.swap(l2);
-    left_hand->rollscale.swap(l3);
-    left_hand->hsscale.swap(l4);
-    left_hand->jumpscale.swap(l5);
-
-    left_hand->ohjumpscale.shrink_to_fit();
-    left_hand->anchorscale.shrink_to_fit();
-    left_hand->rollscale.shrink_to_fit();
-    left_hand->hsscale.shrink_to_fit();
-    left_hand->jumpscale.shrink_to_fit();
-
-    vector<float> r1;
-    vector<float> r2;
-    vector<float> r3;
-    vector<float> r4;
-    vector<float> r5;
-
-    right_hand->ohjumpscale.swap(l1);
-    right_hand->anchorscale.swap(l2);
-    right_hand->rollscale.swap(l3);
-    right_hand->hsscale.swap(l4);
-    right_hand->jumpscale.swap(l5);
-
-    right_hand->ohjumpscale.shrink_to_fit();
-    right_hand->anchorscale.shrink_to_fit();
-    right_hand->rollscale.shrink_to_fit();
-    right_hand->hsscale.shrink_to_fit();
-    right_hand->jumpscale.shrink_to_fit();
-
-
-    SAFE_DELETE(left_hand);
-    SAFE_DELETE(right_hand);
+    SAFE_DELETE(left_hand)
+    SAFE_DELETE(right_hand)
 }
 
 // Function to generate SSR rating
