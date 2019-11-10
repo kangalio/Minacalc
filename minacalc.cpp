@@ -349,21 +349,19 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
             right_fingers.emplace_back(ProcessFinger(NoteInfo, i));
     }
 
-    left_hand = new Hand;
-    left_hand->InitHand(left_fingers[0], left_fingers[1]);
-    left_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
-    left_hand->anchorscale = Anchorscaler(NoteInfo, 1, 2);
-    left_hand->rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
-    left_hand->hsscale = HSDownscaler(NoteInfo);
-    left_hand->jumpscale = JumpDownscaler(NoteInfo);
+    left_hand.InitHand(left_fingers[0], left_fingers[1]);
+    left_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
+    left_hand.anchorscale = Anchorscaler(NoteInfo, 1, 2);
+    left_hand.rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
+    left_hand.hsscale = HSDownscaler(NoteInfo);
+    left_hand.jumpscale = JumpDownscaler(NoteInfo);
 
-    right_hand = new Hand;
-    right_hand->InitHand(right_fingers[0], right_fingers[1]);
-    right_hand->ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
-    right_hand->anchorscale = Anchorscaler(NoteInfo, 4, 8);
-    right_hand->rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
-    right_hand->hsscale = left_hand->hsscale;
-    right_hand->jumpscale = left_hand->jumpscale;
+    right_hand.InitHand(right_fingers[0], right_fingers[1]);
+    right_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
+    right_hand.anchorscale = Anchorscaler(NoteInfo, 4, 8);
+    right_hand.rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
+    right_hand.hsscale = left_hand.hsscale;
+    right_hand.jumpscale = left_hand.jumpscale;
 
     j0 = SequenceJack(NoteInfo, 0);
     j1 = SequenceJack(NoteInfo, 1);
@@ -397,8 +395,8 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t) {
 }
 
 void Calc::TotalMaxPoints() {
-    for (size_t i = 0; i < left_hand->v_itvpoints.size(); i++)
-        MaxPoints += static_cast<float>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
+    for (size_t i = 0; i < left_hand.v_itvpoints.size(); i++)
+        MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
 }
 
 float Calc::Chisel(float player_skill, float resolution, float score_goal, bool stamina, bool jack, bool nps, bool js, bool hs) {
@@ -412,8 +410,8 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
                 gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) -
                             JackLoss(j3, player_skill);
             } else
-                gotpoints = left_hand->CalcInternal(player_skill, stamina, nps, js, hs) +
-                            right_hand->CalcInternal(player_skill, stamina, nps, js, hs);
+                gotpoints = left_hand.CalcInternal(player_skill, stamina, nps, js, hs) +
+                            right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
 
         } while (gotpoints / MaxPoints < score_goal);
         player_skill -= resolution;
@@ -655,21 +653,12 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
     return output;
 }
 
-
-void Calc::Purge() {
-    delete (left_hand);
-    delete (right_hand);
-}
-
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     std::unique_ptr<Calc> doot = std::make_unique<Calc>();
     doot->MusicRate = musicrate;
     goal = CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
     DifficultyRating output = doot->CalcMain(NoteInfo, goal);
-
-    doot->Purge();
-
     return output;
 }
 
