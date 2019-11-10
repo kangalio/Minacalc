@@ -13,9 +13,6 @@ using std::min;
 using std::max;
 using std::sqrt;
 using std::pow;
-
-#define SAFE_DELETE(p){ delete (p); (p) = NULL;}
-
 template<typename T>
 T CalcClamp(T x, T l, T h) {
     if (x > h)
@@ -660,8 +657,8 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
 
 
 void Calc::Purge() {
-    SAFE_DELETE(left_hand)
-    SAFE_DELETE(right_hand)
+    delete (left_hand);
+    delete (right_hand);
 }
 
 // Function to generate SSR rating
