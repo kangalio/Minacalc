@@ -383,14 +383,6 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     j1 = SequenceJack(NoteInfo, 1);
     j2 = SequenceJack(NoteInfo, 2);
     j3 = SequenceJack(NoteInfo, 3);
-
-    vector<Finger> ltmp;
-    vector<Finger> rtmp;
-    left_fingers.swap(ltmp);
-    right_fingers.swap(rtmp);
-
-    left_fingers.shrink_to_fit();
-    right_fingers.shrink_to_fit();
 }
 
 Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
