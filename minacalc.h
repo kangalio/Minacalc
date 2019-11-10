@@ -86,7 +86,7 @@ public:
     hand objects and then runs the chisel function under varying circumstances
     to estimate difficulty for each different skillset. Currently only
     overall/stamina are being produced. */
-    DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo);
+    DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo, float score_goal);
 
     // redo these asap
     static std::vector<float> JackStamAdjust(std::vector<float>& j, float x);
@@ -112,8 +112,6 @@ public:
     // Derivative calc params
     float MusicRate = 1.f;
     float MaxPoints = 0.f; // Total points achievable in the file
-    float Scoregoal =
-            0.93f; // What proportion of the total points are we trying to get
     void TotalMaxPoints(); // Counts up the total points and assigns it
 
     /*	Returns estimate of player skill needed to achieve score goal on chart.
@@ -122,6 +120,7 @@ public:
      *  Additional parameters give specific skill sets being tested for.*/
     float Chisel(float player_skill,
                  float resolution,
+                 float score_goal,
                  bool stamina,
                  bool jack,
                  bool nps,

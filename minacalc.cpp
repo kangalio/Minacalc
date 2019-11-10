@@ -148,7 +148,7 @@ float highest_difficulty(const DifficultyRating& difficulty) {
                                             max(difficulty.chordjack, difficulty.technical))))));
 }
 
-DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
+DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float score_goal) {
     float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f)
             * CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
 
@@ -169,11 +169,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     InitializeHands(NoteInfo);
     TotalMaxPoints();
-    float stream = Chisel(0.1f, 10.24f, false, false, true, false, false);
-    float js = Chisel(0.1f, 10.24f, false, false, true, true, false);
-    float hs = Chisel(0.1f, 10.24f, false, false, true, false, true);
-    float tech = Chisel(0.1f, 10.24f, false, false, false, false, false);
-    float jack = Chisel(0.1f, 10.24f, false, true, true, false, false);
+    float stream = Chisel(0.1f, 10.24f, score_goal, false, false, true, false, false);
+    float js = Chisel(0.1f, 10.24f,  score_goal, false, false, true, true, false);
+    float hs = Chisel(0.1f, 10.24f,  score_goal, false, false, true, false, true);
+    float tech = Chisel(0.1f, 10.24f,  score_goal, false, false, false, false, false);
+    float jack = Chisel(0.1f, 10.24f,  score_goal, false, true, true, false, false);
 
     float techbase = max(stream, jack);
     tech = CalcClamp((tech / techbase)*tech, tech * 0.85f, tech);
@@ -181,13 +181,13 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     float stam;
     if (stream > tech || js > tech || hs > tech)
         if (stream > js && stream > hs)
-            stam = Chisel(stream - 0.1f, 2.56f, true, false, true, false, false);
+            stam = Chisel(stream - 0.1f, 2.56f, score_goal, true, false, true, false, false);
         else if (js > hs)
-            stam = Chisel(js - 0.1f, 2.56f, true, false, true, true, false);
+            stam = Chisel(js - 0.1f, 2.56f, score_goal, true, false, true, true, false);
         else
-            stam = Chisel(hs - 0.1f, 2.56f, true, false, true, false, true);
+            stam = Chisel(hs - 0.1f, 2.56f, score_goal, true, false, true, false, true);
     else
-        stam = Chisel(tech - 0.1f, 2.56f, true, false, false, false, false);
+        stam = Chisel(tech - 0.1f, 2.56f, score_goal, true, false, false, false, false);
 
     js = normalizer(js, stream, 7.25f, 0.25f);
     hs = normalizer(hs, stream, 6.5f, 0.3f);
@@ -204,13 +204,13 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
     tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
 
     DifficultyRating difficulty = DifficultyRating {0.0,
-                                                    downscale_low_accuracy_scores(stream, Scoregoal),
-                                                    downscale_low_accuracy_scores(js, Scoregoal),
-                                                    downscale_low_accuracy_scores(hs, Scoregoal),
-                                                    downscale_low_accuracy_scores(stam, Scoregoal),
-                                                    downscale_low_accuracy_scores(jack, Scoregoal),
-                                                    downscale_low_accuracy_scores(chordjack, Scoregoal),
-                                                    downscale_low_accuracy_scores(tech, Scoregoal)
+                                                    downscale_low_accuracy_scores(stream, score_goal),
+                                                    downscale_low_accuracy_scores(js, score_goal),
+                                                    downscale_low_accuracy_scores(hs, score_goal),
+                                                    downscale_low_accuracy_scores(stam, score_goal),
+                                                    downscale_low_accuracy_scores(jack, score_goal),
+                                                    downscale_low_accuracy_scores(chordjack, score_goal),
+                                                    downscale_low_accuracy_scores(tech, score_goal)
     };
 
     // chordjack
@@ -246,18 +246,18 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     vector<float> temp_vec = skillset_vector(difficulty);
     float overall = AggregateScores(temp_vec, 0.f, 10.24f, 1);
-    difficulty.overall = downscale_low_accuracy_scores(overall, Scoregoal);
+    difficulty.overall = downscale_low_accuracy_scores(overall, score_goal);
 
     temp_vec = skillset_vector(difficulty);
     float aDvg = mean(temp_vec) * 1.2f;
-    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, Scoregoal);
-    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, Scoregoal);
-    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, Scoregoal) * jumpthrill;
-    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, Scoregoal) * jumpthrill;
-    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, Scoregoal) * sqrt(jumpthrill) * 0.996f;
-    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler, Scoregoal);
-    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, Scoregoal);
-    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, Scoregoal) * sqrt(jumpthrill);
+    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, score_goal);
+    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, score_goal);
+    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, score_goal) * jumpthrill;
+    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, score_goal) * jumpthrill;
+    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, score_goal) * sqrt(jumpthrill) * 0.996f;
+    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler, score_goal);
+    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, score_goal);
+    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, score_goal) * sqrt(jumpthrill);
 
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
@@ -270,7 +270,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo) {
 
     float dating = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
 
-    if (Scoregoal < dating) {
+    if (score_goal < dating) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     }
 
@@ -435,7 +435,7 @@ void Calc::TotalMaxPoints() {
         MaxPoints += static_cast<float>(left_hand->v_itvpoints[i] + right_hand->v_itvpoints[i]);
 }
 
-float Calc::Chisel(float player_skill, float resolution, bool stamina, bool jack, bool nps, bool js, bool hs) {
+float Calc::Chisel(float player_skill, float resolution, float score_goal, bool stamina, bool jack, bool nps, bool js, bool hs) {
     float gotpoints;
     for (int iter = 1; iter <= 7; iter++) {
         do {
@@ -449,7 +449,7 @@ float Calc::Chisel(float player_skill, float resolution, bool stamina, bool jack
                 gotpoints = left_hand->CalcInternal(player_skill, stamina, nps, js, hs) +
                             right_hand->CalcInternal(player_skill, stamina, nps, js, hs);
 
-        } while (gotpoints / MaxPoints < Scoregoal);
+        } while (gotpoints / MaxPoints < score_goal);
         player_skill -= resolution;
         resolution /= 2.f;
     }
@@ -753,8 +753,7 @@ DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, f
     std::unique_ptr<Calc> doot = std::make_unique<Calc>();
     doot->MusicRate = musicrate;
     goal = CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
-    doot->Scoregoal = goal;
-    DifficultyRating output = doot->CalcMain(NoteInfo);
+    DifficultyRating output = doot->CalcMain(NoteInfo, goal);
 
     doot->Purge();
 
