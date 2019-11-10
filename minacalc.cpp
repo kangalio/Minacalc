@@ -296,13 +296,12 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x) {
     float fscale = 1750.f;
     float prop = 0.75f;
     float mag = 250.f;
-    float multstam = 1.f;
 
     for (size_t i = 0; i < j.size(); i++) {
-        mod += ((j[i] * multstam / (prop*x)) - 1) / mag;
+        mod += ((j[i] / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor));
+        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor)); //This means there is no upper bound
         output[i] = j[i] * mod;
     }
     return output;
@@ -313,9 +312,9 @@ float Calc::JackLoss(vector<float>& j, float x) {
     float output = 0.f;
     for (float i : v) {
         if (x < i)
-            output += 7.f - (7.f * pow(x / (i * 0.96f), 1.5f));
+            output += 1.f - pow(x / (i * 0.96f), 1.5f);  //This can cause output to decrease if 0.96 * i < x < i
     }
-    return CalcClamp(output, 0.f, 10000.f);
+    return CalcClamp(7.f * output, 0.f, 10000.f);
 }
 
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
