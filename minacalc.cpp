@@ -232,7 +232,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float score_go
         downscale_chordjack_at_end = true;
 
 
-    dumbvalue = (dumbvalue / static_cast<float>(dumbcounter));
+    dumbvalue /= static_cast<float>(dumbcounter);
     float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
@@ -594,8 +594,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int firstNote
         bool anyzero = lcol == 0 || rcol == 0;
         output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
 
-        float stupidthing = (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
-        dumbvalue += stupidthing;
+        dumbvalue += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
         ++dumbcounter;
 
         if (logpatterns)
