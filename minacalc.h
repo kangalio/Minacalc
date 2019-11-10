@@ -89,8 +89,7 @@ public:
     DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo, float score_goal);
 
     // redo these asap
-    static std::vector<float> JackStamAdjust(std::vector<float>& j, float x);
-    static float JackLoss(std::vector<float>& j, float x);
+    static float JackLoss(const std::vector<float>& j, float x);
     JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t);
 
     int numitv;

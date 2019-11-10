@@ -288,8 +288,8 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float score_go
 }
 
 // ugly jack stuff
-vector<float> Calc::JackStamAdjust(vector<float>& j, float x) {
-    vector<float> output(j.size());
+float Calc::JackLoss(const vector<float>& j, float x) {
+    float output = 0.f;
     float floor = 1.f;
     float mod = 1.f;
     float ceil = 1.15f;
@@ -297,20 +297,12 @@ vector<float> Calc::JackStamAdjust(vector<float>& j, float x) {
     float prop = 0.75f;
     float mag = 250.f;
 
-    for (size_t i = 0; i < j.size(); i++) {
-        mod += ((j[i] / (prop*x)) - 1) / mag;
+    for (float i : j) {
+        mod += ((i / (prop*x)) - 1) / mag;
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
-        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor)); //This means there is no upper bound
-        output[i] = j[i] * mod;
-    }
-    return output;
-}
-
-float Calc::JackLoss(vector<float>& j, float x) {
-    const vector<float>& v = JackStamAdjust(j, x);
-    float output = 0.f;
-    for (float i : v) {
+        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor));
+        i *= mod;
         if (x < i)
             output += 1.f - pow(x / (i * 0.96f), 1.5f);  //This can cause output to decrease if 0.96 * i < x < i
     }
