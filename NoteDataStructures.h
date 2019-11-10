@@ -5,7 +5,7 @@
 
 struct NoteInfo
 {
-    int notes;
+    unsigned int notes;
     float rowTime;
 };
 

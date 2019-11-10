@@ -91,7 +91,7 @@ public:
     // redo these asap
     static std::vector<float> JackStamAdjust(std::vector<float>& j, float x);
     static float JackLoss(std::vector<float>& j, float x);
-    JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, int t);
+    JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t);
 
     int numitv;
     int fastwalk(const std::vector<NoteInfo>& NoteInfo);
@@ -107,7 +107,7 @@ public:
     calculated and the result is spit out
     into a new Finger object, or vector of vectors of floats (ms from last note
     in the track). */
-    Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, int t);
+    Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, unsigned int t);
 
     // Derivative calc params
     float MusicRate = 1.f;
@@ -128,11 +128,11 @@ public:
                  bool hs);
 
     std::vector<float> OHJumpDownscaler(const std::vector<NoteInfo>& NoteInfo,
-                                   int t1,
-                                   int t2);
+                                   unsigned int t1,
+                                   unsigned int t2);
     std::vector<float> Anchorscaler(const std::vector<NoteInfo>& NoteInfo,
-                               int t1,
-                               int t2);
+                               unsigned int t1,
+                               unsigned int t2);
     std::vector<float> HSDownscaler(const std::vector<NoteInfo>& NoteInfo);
     std::vector<float> JumpDownscaler(const std::vector<NoteInfo>& NoteInfo);
     std::vector<float> RollDownscaler(Finger f1, Finger f2);

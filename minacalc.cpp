@@ -14,7 +14,7 @@ using std::max;
 using std::sqrt;
 using std::pow;
 
-#define SAFE_DELETE(p){ delete p; p = NULL;}
+#define SAFE_DELETE(p){ delete (p); (p) = NULL;}
 
 template<typename T>
 T CalcClamp(T x, T l, T h) {
@@ -109,16 +109,16 @@ float normalizer(float x, float y, float z1, float z2) {
     return x * z2 * norm + x * (1.f - z2);
 }
 
-int column_count(int note) {
+unsigned int column_count(unsigned int note) {
     return note % 2 + note / 2 % 2 + note / 4 % 2 + note / 8 % 2;
 }
 
 float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
-    int taps = 0;
-    int chords = 0;
+    unsigned int taps = 0;
+    unsigned int chords = 0;
 
     for (auto row : NoteInfo) {
-        int notes = column_count(row.notes);
+        unsigned int notes = column_count(row.notes);
         taps += notes;
         if (notes == chord_size)
             chords += notes;
@@ -317,13 +317,13 @@ float Calc::JackLoss(vector<float>& j, float x) {
     return CalcClamp(7.f * output, 0.f, 10000.f);
 }
 
-JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
+JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     vector<float> output;
     float last = -5.f;
     float mats1;
     float mats2 = 0.f;
     float mats3 = 0.f;
-    int track = 1 << t;
+    unsigned int track = 1u << t;
 
     for (auto i : NoteInfo) {
         if (i.notes & track) {
@@ -382,14 +382,14 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     j3 = SequenceJack(NoteInfo, 3);
 }
 
-Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, int t) {
+Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     int Interval = 1;
     float last = -5.f;
     Finger AllIntervals(numitv);
     vector<float> CurrentInterval;
     vector<int> itvnervtmp;
     vector<vector<int>> itvnerv(numitv);
-    int column = 1 << t;
+    unsigned int column = 1u << t;
 
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / MusicRate;
@@ -541,7 +541,7 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 }
 
 // pattern modifiers
-vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int firstNote, int secondNote) {
+vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
@@ -568,7 +568,7 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, int first
 }
 
 // pattern modifiers
-vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, int firstNote, int secondNote) {
+vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
@@ -600,10 +600,10 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        int taps = 0;
-        int handtaps = 0;
+        unsigned int taps = 0;
+        unsigned int handtaps = 0;
         for (int row : nervIntervals[i]) {
-            int notes = column_count(NoteInfo[row].notes);
+            unsigned int notes = column_count(NoteInfo[row].notes);
             taps += notes;
             if (notes == 3)
                 handtaps++;
@@ -623,10 +623,10 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
-        int taps = 0;
-        int jumps = 0;
+        unsigned int taps = 0;
+        unsigned int jumps = 0;
         for (int row : nervIntervals[i]) {
-            int notes = column_count(NoteInfo[row].notes);
+            unsigned int notes = column_count(NoteInfo[row].notes);
             taps += notes;
             if (notes == 2)
                 jumps++;

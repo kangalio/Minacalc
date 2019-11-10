@@ -73,7 +73,7 @@ SMNotes parse_main_block(stringstream& sm_text) {
         stupidname = 1;
         if (line[0] == ',') {
             float inside = 0.f;
-            for(int note_row : measure) {
+            for(unsigned int note_row : measure) {
                 if (note_row != 0) {
                     output.push_back(NoteInfo {note_row, measurenumber + inside / size});
                 }
@@ -97,7 +97,7 @@ SMNotes parse_main_block(stringstream& sm_text) {
         measure.push_back(notes);
     }
     float inside = 0.f;
-    for(int note_row : measure) {
+    for(unsigned int note_row : measure) {
         if (note_row != 0) {
             output.push_back(NoteInfo{note_row, measurenumber + inside / size});
         }
