@@ -324,18 +324,16 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, int t) {
     float mats1;
     float mats2 = 0.f;
     float mats3 = 0.f;
-    float timestamp;
     int track = 1 << t;
 
     for (auto i : NoteInfo) {
-        float scaledtime = i.rowTime / MusicRate;
         if (i.notes & track) {
+            float current_time = i.rowTime / MusicRate;
             mats1 = mats2;
             mats2 = mats3;
-            mats3 = 1000.f * (scaledtime - last);
-            last = scaledtime;
-            timestamp = CalcClamp((mats1 + mats2 + mats3) / 3.f, 25.f, mats3 * 1.4f);
-            output.emplace_back(CalcClamp(1 / timestamp * 2800.f, 0.f, 50.f));
+            mats3 = 1000.f * (current_time - last);
+            last = current_time;
+            output.emplace_back(min( 2800.f / min((mats1 + mats2 + mats3) / 3.f, mats3 * 1.4f), 50.f));
         }
     }
     return output;
