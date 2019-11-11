@@ -86,30 +86,29 @@ public:
     hand objects and then runs the chisel function under varying circumstances
     to estimate difficulty for each different skillset. Currently only
     overall/stamina are being produced. */
-    DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo, float score_goal);
+    DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo, float music_rate, float score_goal);
 
     // redo these asap
     static float JackLoss(const std::vector<float>& j, float x);
-    JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t);
+    static JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate);
 
     int numitv;
-    int fastwalk(const std::vector<NoteInfo>& NoteInfo);
+    int fastwalk(const std::vector<NoteInfo>& NoteInfo, float music_rate);
 
     /*	Splits up the chart by each hand and calls ProcessFinger on each "track"
     before passing
     the results to the hand initialization functions. Also passes the input
     timingscale value. */
-    void InitializeHands(const std::vector<NoteInfo>& NoteInfo);
+    void InitializeHands(const std::vector<NoteInfo>& NoteInfo, float music_rate);
 
     /*	Slices the track into predefined intervals of time. All taps within each
     interval have their ms values from the last note in the same column
     calculated and the result is spit out
     into a new Finger object, or vector of vectors of floats (ms from last note
     in the track). */
-    Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, unsigned int t);
+    Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate);
 
     // Derivative calc params
-    float MusicRate = 1.f;
     float MaxPoints = 0.f; // Total points achievable in the file
     void TotalMaxPoints(); // Counts up the total points and assigns it
 

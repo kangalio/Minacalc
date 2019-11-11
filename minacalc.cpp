@@ -140,7 +140,7 @@ float highest_difficulty(const DifficultyRating& difficulty) {
                                             max(difficulty.chordjack, difficulty.technical))))));
 }
 
-DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float score_goal) {
+DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
     float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f)
             * CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
 
@@ -159,7 +159,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float score_go
 
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
-    InitializeHands(NoteInfo);
+    InitializeHands(NoteInfo, music_rate);
     TotalMaxPoints();
     float stream = Chisel(0.1f, 10.24f, score_goal, false, false, true, false, false);
     float js = Chisel(0.1f, 10.24f,  score_goal, false, false, true, true, false);
@@ -301,7 +301,7 @@ float Calc::JackLoss(const vector<float>& j, float x) {
     return CalcClamp(7.f * output, 0.f, 10000.f);
 }
 
-JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
+JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     vector<float> output;
     float last = -5.f;
     float interval1;
@@ -311,7 +311,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
 
     for (auto i : NoteInfo) {
         if (i.notes & track) {
-            float current_time = i.rowTime / MusicRate;
+            float current_time = i.rowTime / music_rate;
             interval1 = interval2;
             interval2 = interval3;
             interval3 = 1000.f * (current_time - last);
@@ -322,22 +322,22 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     return output;
 }
 
-int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
+int Calc::fastwalk(const vector<NoteInfo>& NoteInfo, float music_rate) {
     int Interval = 0;
     for (auto i : NoteInfo) {
-        if (i.rowTime / MusicRate >= static_cast<float>(Interval) * IntervalSpan)
+        if (i.rowTime / music_rate >= static_cast<float>(Interval) * IntervalSpan)
             ++Interval;
     }
     return Interval;
 }
 
 
-void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
-    numitv = fastwalk(NoteInfo);
+void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
+    numitv = fastwalk(NoteInfo, music_rate);
 
     ProcessedFingers fingers;
     for (int i = 0; i < 4; i++) {
-        fingers.emplace_back(ProcessFinger(NoteInfo, i));
+        fingers.emplace_back(ProcessFinger(NoteInfo, i, music_rate));
     }
 
     left_hand.InitHand(fingers[0], fingers[1]);
@@ -354,13 +354,13 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     right_hand.hsscale = left_hand.hsscale;
     right_hand.jumpscale = left_hand.jumpscale;
 
-    j0 = SequenceJack(NoteInfo, 0);
-    j1 = SequenceJack(NoteInfo, 1);
-    j2 = SequenceJack(NoteInfo, 2);
-    j3 = SequenceJack(NoteInfo, 3);
+    j0 = SequenceJack(NoteInfo, 0, music_rate);
+    j1 = SequenceJack(NoteInfo, 1, music_rate);
+    j2 = SequenceJack(NoteInfo, 2, music_rate);
+    j3 = SequenceJack(NoteInfo, 3, music_rate);
 }
 
-Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t) {
+Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     int Interval = 0;
     float last = -5.f;
     Finger AllIntervals(numitv,vector<float>());
@@ -369,7 +369,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     unsigned int column = 1u << t;
 
     for (size_t i = 0; i < NoteInfo.size(); i++) {
-        float scaledtime = NoteInfo[i].rowTime / MusicRate;
+        float scaledtime = NoteInfo[i].rowTime / music_rate;
 
         if (scaledtime >= static_cast<float>(Interval + 1) * IntervalSpan) //This produces odd behavior because it should be while not if
             ++Interval;
@@ -626,8 +626,7 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
     std::unique_ptr<Calc> chart_calc = std::make_unique<Calc>();
-    chart_calc->MusicRate = musicrate;
-    return chart_calc->CalcMain(NoteInfo, CalcClamp(goal, 0.f, 0.965f)); // cap SSR at 96.5%
+    return chart_calc->CalcMain(NoteInfo, musicrate, CalcClamp(goal, 0.f, 0.965f)); // cap SSR at 96.5%
 }
 
 // Wrap difficulty calculation for all standard rates
