@@ -134,7 +134,6 @@ public:
     std::vector<float> HSDownscaler(const std::vector<NoteInfo>& NoteInfo);
     std::vector<float> JumpDownscaler(const std::vector<NoteInfo>& NoteInfo);
     std::vector<float> RollDownscaler(const Finger& f1, const Finger& f2);
-    float techscaler = 0.97f;
 
     Hand left_hand;
     Hand right_hand;

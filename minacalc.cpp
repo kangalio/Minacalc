@@ -193,7 +193,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
 
     float chordjack = jack * 0.75f;
     float technorm = max(max(stream, js), hs);
-    tech = normalizer(tech, technorm, 8.f, .15f) * techscaler;
+    tech = normalizer(tech, technorm, 8.f, .15f) * 0.97f;
 
     DifficultyRating difficulty = DifficultyRating {0.0,
                                                     downscale_low_accuracy_scores(stream, score_goal),
