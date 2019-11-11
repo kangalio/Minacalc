@@ -33,9 +33,7 @@ inline float cv(const vector<float> &input) {
 }
 
 inline float downscale_low_accuracy_scores(float f, float sg) {
-    if (sg >= 0.93f)
-        return f;
-    return min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
+    return sg >= 0.93f ? f : min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
 }
 
 // Specifically for pattern modifiers as the neutral value is 1
