@@ -46,7 +46,7 @@ public:
     void InitDiff(Finger& f1, Finger& f2);
 
     // Totals up the points available for each interval
-    void InitPoints(Finger& f1, Finger& f2);
+    void InitPoints(const Finger& f1, const Finger& f2);
 
     /*	The stamina model works by asserting a minimum difficulty relative to
     the supplied player skill level for which the player's stamina begins to

@@ -23,12 +23,12 @@ T CalcClamp(T x, T l, T h) {
 return x;
 }
 
-inline float mean(vector<float>& v) {
+inline float mean(const vector<float>& v) {
     return std::accumulate(begin(v), end(v), 0.f) / v.size();
 }
 
 // Coefficient of variation
-inline float cv(vector<float> &input) {
+inline float cv(const vector<float> &input) {
     float sd = 0.f;
     float average = mean(input);
     for (float i : input)
@@ -87,7 +87,7 @@ inline void DifficultyMSSmooth(vector<float>& input) {
     }
 }
 
-inline float AggregateScores(vector<float>& invector, float rating, float res, int iter) {
+inline float AggregateScores(const vector<float>& invector, float rating, float res, int iter) {
     float sum;
     do {
         rating += res;
@@ -124,7 +124,7 @@ float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
     return static_cast<float>(chords) / static_cast<float>(taps);
 }
 
-vector<float> skillset_vector(DifficultyRating& difficulty) {
+vector<float> skillset_vector(const DifficultyRating& difficulty) {
     return vector<float> {difficulty.overall,
                           difficulty.stream,
                           difficulty.jumpstream,
@@ -460,7 +460,7 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
     v_itvMSdiff = tmpMS;
 }
 
-void Hand::InitPoints(Finger& f1, Finger& f2) {
+void Hand::InitPoints(const Finger& f1, const Finger& f2) {
     for (size_t i = 0; i < f1.size(); i++)
         v_itvpoints.emplace_back(static_cast<int>(f1[i].size()) + static_cast<int>(f2[i].size()));
 }
