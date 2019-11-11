@@ -39,34 +39,15 @@ inline float downscale_low_accuracy_scores(float f, float sg) {
 }
 
 // Specifically for pattern modifiers as the neutral value is 1
-inline void PatternSmooth(vector<float>& input) {
-    float f1 = 1.f;
-    float f2 = 1.f;
-    float f3 = 1.f;
-    float total = 3.f;
+inline void Smooth(vector<float>& input, float neutral) {
+    float f1;
+    float f2 = neutral;
+    float f3 = neutral;
 
     for (float & i : input) {
-        total -= f1;
         f1 = f2;
         f2 = f3;
         f3 = i;
-        total += f3;
-        i = (f1 + f2 + f3) / 3;
-    }
-}
-
-inline void DifficultySmooth(vector<float>& input) {
-    float f1 = 0.f;
-    float f2 = 0.f;
-    float f3 = 0.f;
-    float total = 0.f;
-
-    for (float & i : input) {
-        total -= f1;
-        f1 = f2;
-        f2 = f3;
-        f3 = i;
-        total += f3;
         i = (f1 + f2 + f3) / 3;
     }
 }
@@ -444,7 +425,7 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
         v_itvNPSdiff[i] = finalscaler * nps;
         v_itvMSdiff[i] = finalscaler * (5.f * difficulty + 4.f * nps) / 9.f;
     }
-    DifficultySmooth(v_itvNPSdiff);
+    Smooth(v_itvNPSdiff, 0.f);
     if (SmoothDifficulty)
         DifficultyMSSmooth(v_itvMSdiff);
 }
@@ -515,7 +496,7 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
     }
 
     if (SmoothPatterns)
-        PatternSmooth(output);
+        Smooth(output, 1.f);
     return output;
 }
 
@@ -543,7 +524,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
     }
 
     if (SmoothPatterns)
-        PatternSmooth(output);
+        Smooth(output, 1.f);
     return output;
 }
 
@@ -567,7 +548,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     }
 
     if (SmoothPatterns)
-        PatternSmooth(output);
+        Smooth(output, 1.f);
     return output;
 }
 
@@ -589,7 +570,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
             std::cout << "ju " << output[i] << std::endl;
     }
     if (SmoothPatterns)
-        PatternSmooth(output);
+        Smooth(output, 1.f);
     return output;
 }
 
@@ -622,7 +603,7 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
     }
 
     if (SmoothPatterns)
-        PatternSmooth(output);
+        Smooth(output, 1.f);
 
     return output;
 }
