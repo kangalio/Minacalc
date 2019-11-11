@@ -330,7 +330,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
 int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
     int Interval = 0;
     for (auto i : NoteInfo) {
-        if (i.rowTime / MusicRate >= (float)Interval * IntervalSpan)
+        if (i.rowTime / MusicRate >= static_cast<float>(Interval) * IntervalSpan)
             ++Interval;
     }
     return Interval;
@@ -380,7 +380,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / MusicRate;
 
-        if (scaledtime >= (float)(Interval + 1) * IntervalSpan) //This produces odd behavior because it should be while not if
+        if (scaledtime >= static_cast<float>(Interval + 1) * IntervalSpan) //This produces odd behavior because it should be while not if
             ++Interval;
 
         if (NoteInfo[i].notes & column) {
@@ -626,9 +626,9 @@ vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
             continue;
         }
         vector<float> cvint;
-        for (float & ii : f1[i])
+        for (float ii : f1[i])
             cvint.emplace_back(ii);
-        for (float & ii : f2[i])
+        for (float ii : f2[i])
             cvint.emplace_back(ii);
 
         float interval_mean = mean(cvint);
@@ -670,7 +670,7 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
 
     if (!NoteInfo.empty())
         for (int i = lower_rate; i < upper_rate; i++)
-            allrates.emplace_back(MinaSDCalc(NoteInfo,(float)i / 10.f, 0.93f));
+            allrates.emplace_back(MinaSDCalc(NoteInfo, static_cast<float>(i) / 10.f, 0.93f));
     else {
         DifficultyRating output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
         for (int i = lower_rate; i < upper_rate; i++)
