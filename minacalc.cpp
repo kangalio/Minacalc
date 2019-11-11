@@ -87,18 +87,18 @@ inline void DifficultyMSSmooth(vector<float>& input) {
     }
 }
 
-inline float AggregateScores(const vector<float>& invector, float rating, float res, int iter) {
+inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution, int iter) {
     float sum;
     do {
-        rating += res;
+        rating += resolution;
         sum = 0.0f;
-        for (float i : invector) {
+        for (float i : skillsets) {
             sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
         }
     } while (3 < sum);
     if (iter == 11)
         return rating;
-    return AggregateScores(invector, rating - res, res / 2.f, iter + 1);
+    return AggregateScores(skillsets, rating - resolution, resolution / 2.f, iter + 1);
 }
 
 float normalizer(float x, float y, float z1, float z2) {
@@ -309,19 +309,19 @@ float Calc::JackLoss(const vector<float>& j, float x) {
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t) {
     vector<float> output;
     float last = -5.f;
-    float mats1;
-    float mats2 = 0.f;
-    float mats3 = 0.f;
+    float interval1;
+    float interval2 = 0.f;
+    float interval3 = 0.f;
     unsigned int track = 1u << t;
 
     for (auto i : NoteInfo) {
         if (i.notes & track) {
             float current_time = i.rowTime / MusicRate;
-            mats1 = mats2;
-            mats2 = mats3;
-            mats3 = 1000.f * (current_time - last);
+            interval1 = interval2;
+            interval2 = interval3;
+            interval3 = 1000.f * (current_time - last);
             last = current_time;
-            output.emplace_back(min( 2800.f / min((mats1 + mats2 + mats3) / 3.f, mats3 * 1.4f), 50.f));
+            output.emplace_back(min( 2800.f / min((interval1 + interval2 + interval3) / 3.f, interval3 * 1.4f), 50.f));
         }
     }
     return output;
@@ -433,11 +433,11 @@ float Hand::CalcMSEstimate(vector<float>& input) {
 
     sort(input.begin(), input.end());
     float m = 0;
-    input[0] *= 1.066f;
+    input[0] *= 1.066f; //This is gross
     size_t End = min(input.size(), static_cast<size_t>(6));
     for (size_t i = 0; i < End; i++)
         m += input[i];
-    return 1 / (m / (End)) * 1375;
+    return 1375.f * End / m;
 }
 
 void Hand::InitDiff(Finger& f1, Finger& f2) {
@@ -622,19 +622,19 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
             output[i] = 1.f;
             continue;
         }
-        vector<float> cvint;
-        for (float ii : f1[i])
-            cvint.emplace_back(ii);
-        for (float ii : f2[i])
-            cvint.emplace_back(ii);
+        vector<float> hand_intervals;
+        for (float j : f1[i])
+            hand_intervals.emplace_back(j);
+        for (float j2 : f2[i])
+            hand_intervals.emplace_back(j2);
 
-        float interval_mean = mean(cvint);
+        float interval_mean = mean(hand_intervals);
 
-        for (float & note : cvint)
+        for (float & note : hand_intervals)
             if (interval_mean / note < 0.6f)
                 note = interval_mean;
 
-        float interval_cv = cv(cvint) + 0.85f;
+        float interval_cv = cv(hand_intervals) + 0.85f;
         if (interval_cv >= 1.0f)
             output[i] = min(sqrt(sqrt(interval_cv)), 1.075f);
         else
@@ -652,11 +652,9 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
 
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
-    std::unique_ptr<Calc> doot = std::make_unique<Calc>();
-    doot->MusicRate = musicrate;
-    goal = CalcClamp(goal, 0.f, 0.965f);	// cap SSR at 96% so things don't get out of hand
-    DifficultyRating output = doot->CalcMain(NoteInfo, goal);
-    return output;
+    std::unique_ptr<Calc> chart_calc = std::make_unique<Calc>();
+    chart_calc->MusicRate = musicrate;
+    return chart_calc->CalcMain(NoteInfo, CalcClamp(goal, 0.f, 0.965f)); // cap SSR at 96.5%
 }
 
 // Wrap difficulty calculation for all standard rates
