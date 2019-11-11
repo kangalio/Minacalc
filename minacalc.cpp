@@ -625,8 +625,7 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
 
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
-    std::unique_ptr<Calc> chart_calc = std::make_unique<Calc>();
-    return chart_calc->CalcMain(NoteInfo, musicrate, CalcClamp(goal, 0.f, 0.965f)); // cap SSR at 96.5%
+    return std::make_unique<Calc>()->CalcMain(NoteInfo, musicrate, CalcClamp(goal, 0.f, 0.965f)); // cap SSR at 96.5%
 }
 
 // Wrap difficulty calculation for all standard rates
