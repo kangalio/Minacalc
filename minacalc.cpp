@@ -382,6 +382,8 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
         if (t == 0 && NoteInfo[i].notes != 0)
             nervIntervals[Interval].emplace_back(i);
     }
+    if (!nervIntervals.empty())  //This is a bug in the original calc
+        nervIntervals[nervIntervals.size() - 1].clear();
     return AllIntervals;
 }
 
