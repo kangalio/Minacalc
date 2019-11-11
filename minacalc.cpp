@@ -617,7 +617,7 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
 }
 
 
-vector<float> Calc::RollDownscaler(Finger f1, Finger f2) {
+vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
     vector<float> output(f1.size());    //this is slightly problematic because if one finger is longer than the other
                                         //you could potentially have different results with f1 and f2 switched
     for (size_t i = 0; i < f1.size(); i++) {
