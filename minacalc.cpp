@@ -15,12 +15,7 @@ using std::sqrt;
 using std::pow;
 template<typename T>
 T CalcClamp(T x, T l, T h) {
-    if (x > h)
-        x = h;
-    else
-    if (x < l)
-        x = l;
-return x;
+return x > h ? h : (x < l ? l : x);
 }
 
 inline float mean(const vector<float>& v) {
@@ -340,26 +335,22 @@ int Calc::fastwalk(const vector<NoteInfo>& NoteInfo) {
 void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo) {
     numitv = fastwalk(NoteInfo);
 
-    ProcessedFingers left_fingers;
-    ProcessedFingers right_fingers;
+    ProcessedFingers fingers;
     for (int i = 0; i < 4; i++) {
-        if (i < 2)
-            left_fingers.emplace_back(ProcessFinger(NoteInfo, i));
-        else
-            right_fingers.emplace_back(ProcessFinger(NoteInfo, i));
+        fingers.emplace_back(ProcessFinger(NoteInfo, i));
     }
 
-    left_hand.InitHand(left_fingers[0], left_fingers[1]);
+    left_hand.InitHand(fingers[0], fingers[1]);
     left_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
     left_hand.anchorscale = Anchorscaler(NoteInfo, 1, 2);
-    left_hand.rollscale = RollDownscaler(left_fingers[0], left_fingers[1]);
+    left_hand.rollscale = RollDownscaler(fingers[0], fingers[1]);
     left_hand.hsscale = HSDownscaler(NoteInfo);
     left_hand.jumpscale = JumpDownscaler(NoteInfo);
 
-    right_hand.InitHand(right_fingers[0], right_fingers[1]);
+    right_hand.InitHand(fingers[2], fingers[3]);
     right_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
     right_hand.anchorscale = Anchorscaler(NoteInfo, 4, 8);
-    right_hand.rollscale = RollDownscaler(right_fingers[0], right_fingers[1]);
+    right_hand.rollscale = RollDownscaler(fingers[2], fingers[3]);
     right_hand.hsscale = left_hand.hsscale;
     right_hand.jumpscale = left_hand.jumpscale;
 
@@ -406,12 +397,9 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
             if (player_skill > 100.f)
                 return player_skill;
             player_skill += resolution;
-            if (jack) {
-                gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) -
-                            JackLoss(j3, player_skill);
-            } else
-                gotpoints = left_hand.CalcInternal(player_skill, stamina, nps, js, hs) +
-                            right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
+            gotpoints = jack ?
+                    MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) - JackLoss(j3, player_skill)
+                    : left_hand.CalcInternal(player_skill, stamina, nps, js, hs) + right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
 
         } while (gotpoints / MaxPoints < score_goal);
         player_skill -= resolution;
@@ -481,33 +469,21 @@ void Hand::StamAdjust(float x, vector<float>& diff) {
 }
 
 float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
-    vector<float> diff;
-
-    if (nps)
-        diff = v_itvNPSdiff;
-    else
-        diff = v_itvMSdiff;
+    vector<float> diff = nps ? v_itvNPSdiff : v_itvMSdiff;
 
     for (size_t i = 0; i < diff.size(); ++i) {
-        if (hs)
-            diff[i] *= anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
-        else if (js)
-            diff[i] *= hsscale[i] * hsscale[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i];
-        else if (nps)
-            diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * anchorscale[i] * ohjumpscale[i] * ohjumpscale[i]
-                    * rollscale[i] * jumpscale[i] * jumpscale[i];
-        else
-            diff[i] *= anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i];
+        diff[i] *= hs ? anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i]
+                : (js ? hsscale[i] * hsscale[i] * anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i] * jumpscale[i]
+                : (nps ? hsscale[i] * hsscale[i] * hsscale[i] * anchorscale[i] * ohjumpscale[i] * ohjumpscale[i]
+                                * rollscale[i] * jumpscale[i] * jumpscale[i]
+                : anchorscale[i] * sqrt(ohjumpscale[i]) * rollscale[i]));
     }
 
     if (stam)
         StamAdjust(x, diff);
     float output = 0.f;
     for (size_t i = 0; i < diff.size(); i++) {
-        if (x > diff[i])
-            output += v_itvpoints[i];
-        else
-            output += v_itvpoints[i] * pow(x / diff[i], 1.8f);
+        output += x > diff[i] ? v_itvpoints[i] : v_itvpoints[i] * pow(x / diff[i], 1.8f);
     }
     return output;
 }
@@ -635,10 +611,7 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
                 note = interval_mean;
 
         float interval_cv = cv(hand_intervals) + 0.85f;
-        if (interval_cv >= 1.0f)
-            output[i] = min(sqrt(sqrt(interval_cv)), 1.075f);
-        else
-            output[i] = interval_cv*interval_cv*interval_cv;
+        output[i] = interval_cv >= 1.0f ? min(sqrt(sqrt(interval_cv)), 1.075f) : interval_cv*interval_cv*interval_cv;
 
         if (logpatterns)
             std::cout << "ro " << output[i] << std::endl;
