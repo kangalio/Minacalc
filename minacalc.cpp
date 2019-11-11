@@ -441,23 +441,20 @@ float Hand::CalcMSEstimate(vector<float>& input) {
 }
 
 void Hand::InitDiff(Finger& f1, Finger& f2) {
-    vector<float> tmpNPS(f1.size());
-    vector<float> tmpMS(f1.size());
+    v_itvNPSdiff = vector<float>(f1.size());
+    v_itvMSdiff = vector<float>(f1.size());
 
     for (size_t i = 0; i < f1.size(); i++) {
-        float nps = 1.6f * static_cast<float>(f1[i].size() + f2[i].size());		// intervalspan
-        float aa = CalcMSEstimate(f1[i]);
-        float bb = CalcMSEstimate(f2[i]);
-        float ms = max(aa, bb);
-        tmpNPS[i] = finalscaler * nps;
-        tmpMS[i] = finalscaler * (5.f * ms + 4.f * nps) / 9.f;
+        float nps = 1.6f * static_cast<float>(f1[i].size() + f2[i].size());
+        float left_difficulty = CalcMSEstimate(f1[i]);
+        float right_difficulty = CalcMSEstimate(f2[i]);
+        float difficulty = max(left_difficulty, right_difficulty);
+        v_itvNPSdiff[i] = finalscaler * nps;
+        v_itvMSdiff[i] = finalscaler * (5.f * difficulty + 4.f * nps) / 9.f;
     }
+    DifficultySmooth(v_itvNPSdiff);
     if (SmoothDifficulty)
-        DifficultyMSSmooth(tmpMS);
-
-    DifficultySmooth(tmpNPS);
-    v_itvNPSdiff = tmpNPS;
-    v_itvMSdiff = tmpMS;
+        DifficultyMSSmooth(v_itvMSdiff);
 }
 
 void Hand::InitPoints(const Finger& f1, const Finger& f2) {
