@@ -599,10 +599,10 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
             continue;
         }
         vector<float> hand_intervals;
-        for (float j : f1[i])
-            hand_intervals.emplace_back(j);
-        for (float j2 : f2[i])
-            hand_intervals.emplace_back(j2);
+        for (float time1 : f1[i])
+            hand_intervals.emplace_back(time1);
+        for (float time2 : f2[i])
+            hand_intervals.emplace_back(time2);
 
         float interval_mean = mean(hand_intervals);
 
