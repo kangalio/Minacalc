@@ -14,7 +14,6 @@
 #endif
 
 typedef std::vector<DifficultyRating> MinaSD;
-
 typedef std::vector<std::vector<float>> Finger;
 typedef std::vector<Finger> ProcessedFingers;
 typedef std::vector<float> JackSeq;

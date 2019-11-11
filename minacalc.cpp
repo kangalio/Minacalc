@@ -1,6 +1,3 @@
-// MinaCalc.cpp : Defines the exported functions for the DLL application.
-//
-
 #include "minacalc.h"
 #include <cmath>
 #include <iostream>
@@ -310,7 +307,6 @@ int Calc::fastwalk(const vector<NoteInfo>& NoteInfo, float music_rate) {
     return Interval;
 }
 
-
 void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
     numitv = fastwalk(NoteInfo, music_rate);
 
@@ -390,7 +386,6 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
     }
     return player_skill + 2.f * resolution;
 }
-
 
 // Hand stuff
 void Hand::InitHand(Finger & f1, Finger & f2) {
@@ -525,7 +520,6 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
         Smooth(output, 1.f);
     return output;
 }
-
 
 vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
