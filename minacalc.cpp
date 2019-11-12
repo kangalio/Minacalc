@@ -468,24 +468,24 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 
 // pattern modifiers
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
-    vector<float> output(nervIntervals.size());
+    vector<float> output;
 
-    for (size_t i = 0; i < nervIntervals.size(); i++) {
+    for (vector<int>& interval : nervIntervals) {
         int taps = 0;
-        int jumptaps = 0;
-        for (int row : nervIntervals[i]) {
+        int jumps = 0;
+        for (int row : interval) {
             if (NoteInfo[row].notes & firstNote) {
                 ++taps;
                 if (NoteInfo[row].notes & secondNote) {
-                    jumptaps += 2;
+                    ++jumps;
                     ++taps;
                 }
             }
         }
-        output[i] = taps != 0 ? pow(1 - (static_cast<float>(jumptaps) / static_cast<float>(taps) / 2.5f), 0.25f) : 1.f;
+        output.push_back(taps != 0 ? pow(1 - (0.8f * static_cast<float>(jumps) / static_cast<float>(taps)), 0.25f) : 1.f);
 
         if (logpatterns)
-            std::cout << "ohj " << output[i] << std::endl;
+            std::cout << "ohj " << output.back() << std::endl;
     }
 
     if (SmoothPatterns)
