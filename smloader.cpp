@@ -19,10 +19,10 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
     vector<SMNotes> raw_block;
     BPMs bpms;
     while (!sm_text.empty()) {
-        size_t next_tag_position = sm_text.find('#') + 1;
+        size_t next_tag_position = sm_text.find('#');
         if (next_tag_position == string::npos)
             break;
-        sm_text = sm_text.substr(next_tag_position);
+        sm_text = sm_text.substr(next_tag_position + 1);
         if (sm_text.substr(0,5) == "NOTES") {
             for (int i = 0; i < 6; i++) {
                 next_tag_position = sm_text.find(':');
