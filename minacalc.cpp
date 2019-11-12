@@ -58,18 +58,20 @@ inline void DifficultyMSSmooth(vector<float>& input) {
     }
 }
 
-inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution, int iter) {
+inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution) {
     float sum;
-    do {
-        rating += resolution;
-        sum = 0.0f;
-        for (float i : skillsets) {
-            sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
-        }
-    } while (3 < sum);
-    if (iter == 11)
-        return rating;
-    return AggregateScores(skillsets, rating - resolution, resolution / 2.f, iter + 1);
+    for (int iter = 1; iter <= 11; iter++){
+        do {
+            rating += resolution;
+            sum = 0.0f;
+            for (float i : skillsets) {
+                sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
+            }
+        } while (3 < sum);
+        rating -= resolution;
+        resolution /= 2.f;
+    }
+    return rating + 2.f * resolution;
 }
 
 float normalizer(float x, float y, float z1, float z2) {
@@ -213,7 +215,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         difficulty.stream -= sqrt(skadoot - difficulty.stream);
 
     vector<float> temp_vec = skillset_vector(difficulty);
-    float overall = AggregateScores(temp_vec, 0.f, 10.24f, 1);
+    float overall = AggregateScores(temp_vec, 0.f, 10.24f);
     difficulty.overall = downscale_low_accuracy_scores(overall, score_goal);
 
     temp_vec = skillset_vector(difficulty);
@@ -230,7 +232,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
     vector<float> temp = skillset_vector(difficulty);
-    difficulty.overall = AggregateScores(temp, 0.f, 10.24f, 1);
+    difficulty.overall = AggregateScores(temp, 0.f, 10.24f);
 
     if (downscale_chordjack_at_end) {
         difficulty.chordjack *= 0.9f;
