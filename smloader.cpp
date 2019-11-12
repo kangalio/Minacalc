@@ -15,19 +15,19 @@ SMNotes load_from_file(ifstream& file) {
     stringstream sm_buffer;
     sm_buffer << file.rdbuf();
     string sm_text = sm_buffer.str();
-    SMNotes raw_block = std::vector<NoteInfo>();
-    BPMs bpms = std::vector<BPM>();
+    SMNotes raw_block;
+    BPMs bpms;
     while (!sm_text.empty()) {
-        size_t next_tag_position = sm_text.find('#');
+        size_t next_tag_position = sm_text.find('#') + 1;
         if (next_tag_position == string::npos)
             break;
-        sm_text = sm_text.substr(next_tag_position + 1);
+        sm_text = sm_text.substr(next_tag_position);
         if (sm_text.substr(0,5) == "NOTES") {
             for (int i = 0; i < 6; i++) {
                 next_tag_position = sm_text.find(':');
                 if (next_tag_position == string::npos)
                     break;
-                sm_text = sm_text.substr(next_tag_position + 1);
+                sm_text = sm_text.substr(next_tag_position);
             }
             stringstream notes_block;
             next_tag_position = sm_text.find(';');
@@ -63,43 +63,43 @@ SMNotes load_from_file(ifstream& file) {
 SMNotes parse_main_block(stringstream& sm_text) {
     SMNotes output;
     int notes;
-    int stupidname;
-    float size = 0.f;
-    float measurenumber = 0.f;
+    int column_value;
+    float measure_size = 0.f;
+    float measure_number = 0.f;
     std::vector<int> measure;
     for (std::string line; std::getline(sm_text, line); )
     {
         notes = 0;
-        stupidname = 1;
+        column_value = 1;
         if (line[0] == ',') {
             float inside = 0.f;
             for(unsigned int note_row : measure) {
                 if (note_row != 0) {
-                    output.push_back(NoteInfo {note_row, measurenumber + inside / size});
+                    output.push_back(NoteInfo {note_row, measure_number + inside / measure_size});
                 }
                 inside += 1.f;
             }
-            measurenumber += 1.f;
+            measure_number += 1.f;
             measure.clear();
-            size = 0.f;
+            measure_size = 0.f;
             continue;
         }
         for(char & it : line) {
             if (it == '1' || it == '2') {
-                notes += stupidname;
+                notes += column_value;
             }
-            if (stupidname == 8) {
+            if (column_value == 8) {
                 break;
             }
-            stupidname *= 2;
+            column_value *= 2;
         }
-        size += 1.f;
+        measure_size += 1.f;
         measure.push_back(notes);
     }
     float inside = 0.f;
     for(unsigned int note_row : measure) {
         if (note_row != 0) {
-            output.push_back(NoteInfo{note_row, measurenumber + inside / size});
+            output.push_back(NoteInfo{note_row, measure_number + inside / measure_size});
         }
         inside += 1.f;
     }
