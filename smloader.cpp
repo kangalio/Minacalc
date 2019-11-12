@@ -6,16 +6,17 @@
 #include <iostream>
 #include "smloader.h"
 
+using std::vector;
 using std::stringstream;
 using std::string;
 SMNotes parse_main_block(stringstream&);
 BPMs parse_bpms_block(stringstream&);
 
-SMNotes load_from_file(ifstream& file) {
+vector<SMNotes> load_from_file(std::ifstream& file) {
     stringstream sm_buffer;
     sm_buffer << file.rdbuf();
     string sm_text = sm_buffer.str();
-    SMNotes raw_block;
+    vector<SMNotes> raw_block;
     BPMs bpms;
     while (!sm_text.empty()) {
         size_t next_tag_position = sm_text.find('#') + 1;
@@ -32,7 +33,7 @@ SMNotes load_from_file(ifstream& file) {
             stringstream notes_block;
             next_tag_position = sm_text.find(';');
             notes_block << sm_text.substr(sm_text.find('\n')+1, next_tag_position-1);
-            raw_block = parse_main_block(notes_block);
+            raw_block.push_back(parse_main_block(notes_block));
             sm_text = sm_text.substr(next_tag_position + 1);
         } else if (sm_text.substr(0,4) == "BPMS") {
             next_tag_position = sm_text.find(':');
@@ -48,15 +49,16 @@ SMNotes load_from_file(ifstream& file) {
     float last_bpm = 120.f;
     float last_bpm_time = 0.f;
     float last_bpm_beat = 0.f;
-    for (NoteInfo& timestamp : raw_block) {
-        while (next_bpm_index < bpms.size() && bpms[next_bpm_index].beat <= timestamp.rowTime) {
-            last_bpm_time += (bpms[next_bpm_index].beat - last_bpm_beat) * 240.f / last_bpm;
-            last_bpm_beat = bpms[next_bpm_index].beat;
-            last_bpm = bpms[next_bpm_index].bpm;
-            next_bpm_index += 1;
+    for (SMNotes& chart : raw_block)
+        for (NoteInfo& timestamp : chart) {
+            while (next_bpm_index < bpms.size() && bpms[next_bpm_index].beat <= timestamp.rowTime) {
+                last_bpm_time += (bpms[next_bpm_index].beat - last_bpm_beat) * 240.f / last_bpm;
+                last_bpm_beat = bpms[next_bpm_index].beat;
+                last_bpm = bpms[next_bpm_index].bpm;
+                next_bpm_index += 1;
+            }
+            timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm + 0.108f;
         }
-        timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm + 0.108f;
-    }
     return raw_block;
 }
 
@@ -66,7 +68,7 @@ SMNotes parse_main_block(stringstream& sm_text) {
     int column_value;
     float measure_size = 0.f;
     float measure_number = 0.f;
-    std::vector<int> measure;
+    vector<int> measure;
     for (std::string line; std::getline(sm_text, line); )
     {
         notes = 0;
@@ -111,7 +113,7 @@ SMNotes parse_main_block(stringstream& sm_text) {
 BPMs parse_bpms_block(stringstream& bpms_block) {
     float next_time;
     float next_bpm;
-    BPMs bpm_list = std::vector<BPM>();
+    BPMs bpm_list = vector<BPM>();
     while (bpms_block.rdbuf()->in_avail()) {
         while (!(bpms_block >> next_time)) {
             if (!bpms_block.rdbuf()->in_avail())
