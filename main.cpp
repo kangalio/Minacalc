@@ -5,9 +5,12 @@
 using std::cout;
 using std::endl;
 
-int main() {
+int main(int argc, char *argv[]) {
     std::ifstream sm_file;
-    sm_file.open("../chart.sm");
+    if (argc > 1)
+        sm_file.open(argv[1]);
+    else
+        sm_file.open("../chart.sm");
     if (sm_file.is_open()) {
         std::vector<std::vector<NoteInfo> > chart = load_from_file(sm_file);
         for (auto& difficulty : chart) {
