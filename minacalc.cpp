@@ -110,12 +110,9 @@ vector<float> skillset_vector(const DifficultyRating& difficulty) {
 }
 
 float highest_difficulty(const DifficultyRating& difficulty) {
-    return max(difficulty.stream,
-            max(difficulty.jumpstream,
-                    max(difficulty.handstream,
-                            max( difficulty.stamina,
-                                    max(difficulty.jack,
-                                            max(difficulty.chordjack, difficulty.technical))))));
+    auto v = {difficulty.stream,difficulty.jumpstream,difficulty.handstream,difficulty.stamina,difficulty.jack,
+              difficulty.chordjack,difficulty.technical};
+    return *std::max_element(v.begin(), v.end());
 }
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
