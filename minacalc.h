@@ -33,9 +33,6 @@ public:
     interval, and not the full vector of intervals. */
     static float CalcMSEstimate(std::vector<float>& input);
 
-    // Wraps the three preparatory functions below
-    void InitHand(Finger& f1, Finger& f2);
-
     /*	Averages nps and ms estimates for difficulty to get a rough initial
     value. This is relatively robust as patterns that get overrated by nps
     estimates are underrated by ms estimates, and vice versa. Pattern modifiers

@@ -311,14 +311,16 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
         fingers.emplace_back(ProcessFinger(NoteInfo, i, music_rate));
     }
 
-    left_hand.InitHand(fingers[0], fingers[1]);
+    left_hand.InitDiff(fingers[0], fingers[1]);
+    left_hand.InitPoints(fingers[0], fingers[1]);
     left_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
     left_hand.anchorscale = Anchorscaler(NoteInfo, 1, 2);
     left_hand.rollscale = RollDownscaler(fingers[0], fingers[1]);
     left_hand.hsscale = HSDownscaler(NoteInfo);
     left_hand.jumpscale = JumpDownscaler(NoteInfo);
 
-    right_hand.InitHand(fingers[2], fingers[3]);
+    right_hand.InitDiff(fingers[2], fingers[3]);
+    right_hand.InitPoints(fingers[2], fingers[3]);
     right_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
     right_hand.anchorscale = Anchorscaler(NoteInfo, 4, 8);
     right_hand.rollscale = RollDownscaler(fingers[2], fingers[3]);
@@ -381,11 +383,6 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
         resolution /= 2.f;
     }
     return player_skill + 2.f * resolution;
-}
-
-void Hand::InitHand(Finger & f1, Finger & f2) {
-    InitDiff(f1, f2);
-    InitPoints(f1, f2);
 }
 
 float Hand::CalcMSEstimate(vector<float>& input) {
