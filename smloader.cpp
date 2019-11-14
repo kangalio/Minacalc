@@ -28,7 +28,7 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
                 next_tag_position = sm_text.find(':');
                 if (next_tag_position == string::npos)
                     break;
-                sm_text = sm_text.substr(next_tag_position);
+                sm_text = sm_text.substr(next_tag_position + 1);
             }
             stringstream notes_block;
             next_tag_position = sm_text.find(';');
