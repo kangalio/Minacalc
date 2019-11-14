@@ -1,7 +1,6 @@
 #pragma once
 #include "NoteDataStructures.h"
 #include <vector>
-#include <map>
 
 // For internal, must be preprocessor defined
 #if defined(MINADLL_COMPILE) && defined(_WIN32)
@@ -40,14 +39,11 @@ public:
     interval, and not the full vector of intervals. */
     static float CalcMSEstimate(std::vector<float>& input);
 
-    // Wraps the three prepatory functions below
-    void InitHand(Finger& f1, Finger& f2);
-
     /*	Averages nps and ms estimates for difficulty to get a rough initial
     value. This is relatively robust as patterns that get overrated by nps
     estimates are underrated by ms estimates, and vice versa. Pattern modifiers
     are used to adjust for circumstances in which this is not true. The result
-    is output to v_itvdiff. */
+    is output to v_itvNPSdiff and v_itvMSdiff. */
     void InitDiff(Finger& f1, Finger& f2);
 
     // Totals up the points available for each interval
@@ -159,7 +155,6 @@ private:
     const bool logpatterns = false;
 
     float dumbvalue = 1.f;
-    int dumbcounter = 0;
 
     JackSeq j0;
     JackSeq j1;

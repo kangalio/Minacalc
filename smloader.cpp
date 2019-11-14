@@ -28,7 +28,7 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
                 next_tag_position = sm_text.find(':');
                 if (next_tag_position == string::npos)
                     break;
-                sm_text = sm_text.substr(next_tag_position);
+                sm_text = sm_text.substr(next_tag_position + 1);
             }
             stringstream notes_block;
             next_tag_position = sm_text.find(';');
@@ -57,7 +57,7 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
                 last_bpm = bpms[next_bpm_index].bpm;
                 next_bpm_index += 1;
             }
-            timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm + 0.108f;
+            timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm;
         }
     return raw_block;
 }

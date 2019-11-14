@@ -2,7 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
-#include <thread>
+#include <memory>
 #include <numeric>
 #include <iostream>
 
@@ -37,7 +37,6 @@ inline float downscale_low_accuracy_scores(float f, float sg) {
     return sg >= 0.93f ? f : min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
 }
 
-// Specifically for pattern modifiers as the neutral value is 1
 inline void Smooth(vector<float>& input, float neutral) {
     float f1;
     float f2 = neutral;
@@ -79,8 +78,7 @@ inline float AggregateScores(const vector<float>& skillsets, float rating, float
 }
 
 float normalizer(float x, float y, float z1, float z2) {
-    float norm = CalcClamp(((x / y) - 1.f)*z1, 0.f, 1.f);
-    return x * z2 * norm + x * (1.f - z2);
+    return x - x * CalcClamp(-(x / y)*z1*z2 + z1*z2 + z2, 0.f, z2);
 }
 
 unsigned int column_count(unsigned int note) {
@@ -184,7 +182,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
                                                     downscale_low_accuracy_scores(tech, score_goal)
     };
 
-    // chordjack
     chordjack = difficulty.handstream;
 
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
@@ -203,7 +200,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         downscale_chordjack_at_end = true;
 
 
-    dumbvalue /= static_cast<float>(dumbcounter);
+    dumbvalue /= static_cast<float>(nervIntervals.size());
     float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
@@ -378,14 +375,16 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
         fingers.emplace_back(ProcessFinger(NoteInfo, i, music_rate));
     }
 
-    left_hand.InitHand(fingers[0], fingers[1]);
+    left_hand.InitDiff(fingers[0], fingers[1]);
+    left_hand.InitPoints(fingers[0], fingers[1]);
     left_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
     left_hand.anchorscale = Anchorscaler(NoteInfo, 1, 2);
     left_hand.rollscale = RollDownscaler(fingers[0], fingers[1]);
     left_hand.hsscale = HSDownscaler(NoteInfo);
     left_hand.jumpscale = JumpDownscaler(NoteInfo);
 
-    right_hand.InitHand(fingers[2], fingers[3]);
+    right_hand.InitDiff(fingers[2], fingers[3]);
+    right_hand.InitPoints(fingers[2], fingers[3]);
     right_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
     right_hand.anchorscale = Anchorscaler(NoteInfo, 4, 8);
     right_hand.rollscale = RollDownscaler(fingers[2], fingers[3]);
@@ -464,12 +463,6 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
     return player_skill + 2.f * resolution;
 }
 
-// Hand stuff
-void Hand::InitHand(Finger & f1, Finger & f2) {
-    InitDiff(f1, f2);
-    InitPoints(f1, f2);
-}
-
 // Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms
 float Hand::CalcMSEstimate(vector<float>& input) {
     if (input.empty())
@@ -508,7 +501,7 @@ void Hand::InitPoints(const Finger& f1, const Finger& f2) {
 
 void Hand::StamAdjust(float x, vector<float>& diff) {
     float floor = 1.f;			// stamina multiplier min (increases as chart advances)
-    float mod = 1.f;			// mutliplier
+    float mod = 1.f;			// multiplier
     float avs1;
     float avs2 = 0.f;
 
@@ -544,11 +537,10 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
     return output;
 }
 
-// pattern modifiers
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output;
 
-    for (vector<int>& interval : nervIntervals) {
+    for (const vector<int>& interval : nervIntervals) {
         int taps = 0;
         int jumps = 0;
         for (int row : interval) {
@@ -571,7 +563,6 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
     return output;
 }
 
-// pattern modifiers
 vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
@@ -588,7 +579,6 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
         output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
 
         dumbvalue += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
-        ++dumbcounter;
 
         if (logpatterns)
             std::cout << "an " << output[i] << std::endl;
