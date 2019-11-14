@@ -33,7 +33,6 @@ inline float downscale_low_accuracy_scores(float f, float sg) {
     return sg >= 0.93f ? f : min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
 }
 
-// Specifically for pattern modifiers as the neutral value is 1
 inline void Smooth(vector<float>& input, float neutral) {
     float f1;
     float f2 = neutral;
@@ -179,7 +178,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
                                                     downscale_low_accuracy_scores(tech, score_goal)
     };
 
-    // chordjack
     chordjack = difficulty.handstream;
 
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
@@ -385,7 +383,6 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
     return player_skill + 2.f * resolution;
 }
 
-// Hand stuff
 void Hand::InitHand(Finger & f1, Finger & f2) {
     InitDiff(f1, f2);
     InitPoints(f1, f2);
@@ -428,7 +425,7 @@ void Hand::InitPoints(const Finger& f1, const Finger& f2) {
 
 void Hand::StamAdjust(float x, vector<float>& diff) {
     float floor = 1.f;			// stamina multiplier min (increases as chart advances)
-    float mod = 1.f;			// mutliplier
+    float mod = 1.f;			// multiplier
     float avs1;
     float avs2 = 0.f;
 
@@ -464,7 +461,6 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
     return output;
 }
 
-// pattern modifiers
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output;
 
@@ -491,7 +487,6 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
     return output;
 }
 
-// pattern modifiers
 vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
