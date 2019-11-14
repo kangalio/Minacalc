@@ -198,7 +198,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         downscale_chordjack_at_end = true;
 
 
-    dumbvalue /= static_cast<float>(dumbcounter);
+    dumbvalue /= static_cast<float>(nervIntervals.size());
     float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
@@ -468,7 +468,7 @@ float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output;
 
-    for (vector<int>& interval : nervIntervals) {
+    for (const vector<int>& interval : nervIntervals) {
         int taps = 0;
         int jumps = 0;
         for (int row : interval) {
@@ -508,7 +508,6 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
         output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
 
         dumbvalue += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
-        ++dumbcounter;
 
         if (logpatterns)
             std::cout << "an " << output[i] << std::endl;

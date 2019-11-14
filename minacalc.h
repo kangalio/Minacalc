@@ -147,7 +147,6 @@ private:
     const bool logpatterns = false;
 
     float dumbvalue = 1.f;
-    int dumbcounter = 0;
 
     JackSeq j0;
     JackSeq j1;
