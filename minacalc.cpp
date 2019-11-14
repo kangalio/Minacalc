@@ -75,8 +75,7 @@ inline float AggregateScores(const vector<float>& skillsets, float rating, float
 }
 
 float normalizer(float x, float y, float z1, float z2) {
-    float norm = CalcClamp(((x / y) - 1.f)*z1, 0.f, 1.f);
-    return x * z2 * norm + x * (1.f - z2);
+    return x - x * CalcClamp(-(x / y)*z1*z2 + z1*z2 + z2, 0.f, z2);
 }
 
 unsigned int column_count(unsigned int note) {
