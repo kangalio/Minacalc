@@ -1,7 +1,6 @@
 #pragma once
 #include "NoteDataStructures.h"
 #include <vector>
-#include <map>
 
 // For internal, must be preprocessor defined
 #if defined(MINADLL_COMPILE) && defined(_WIN32)

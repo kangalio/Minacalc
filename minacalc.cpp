@@ -2,7 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
-#include <thread>
+#include <memory>
 #include <numeric>
 
 using std::vector;
