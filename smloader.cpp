@@ -57,7 +57,7 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
                 last_bpm = bpms[next_bpm_index].bpm;
                 next_bpm_index += 1;
             }
-            timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm + 0.108f;
+            timestamp.rowTime = last_bpm_time + (timestamp.rowTime - last_bpm_beat) * 240.f / last_bpm;
         }
     return raw_block;
 }
