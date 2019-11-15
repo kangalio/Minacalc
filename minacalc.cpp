@@ -195,7 +195,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     else
         downscale_chordjack_at_end = true;
 
-
     fingerbias /= static_cast<float>(2 * nervIntervals.size());
     float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
     difficulty.technical *= finger_bias_scaling;
