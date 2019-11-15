@@ -196,17 +196,17 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         downscale_chordjack_at_end = true;
 
 
-    dumbvalue /= static_cast<float>(2 * nervIntervals.size());
-    float stupidvalue = CalcClamp(3.55f - dumbvalue, 0.85f, 1.f);
-    difficulty.technical *= stupidvalue;
+    fingerbias /= static_cast<float>(2 * nervIntervals.size());
+    float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
+    difficulty.technical *= finger_bias_scaling;
 
-    if (stupidvalue <= 0.95f) {
-        difficulty.jack *= 1.f + (1.f - sqrt(stupidvalue));
+    if (finger_bias_scaling <= 0.95f) {
+        difficulty.jack *= 1.f + (1.f - sqrt(finger_bias_scaling));
     }
 
-    float skadoot = max(difficulty.handstream, difficulty.jumpstream);
-    if (difficulty.stream < skadoot)
-        difficulty.stream -= sqrt(skadoot - difficulty.stream);
+    float max_js_hs = max(difficulty.handstream, difficulty.jumpstream);
+    if (difficulty.stream < max_js_hs)
+        difficulty.stream -= sqrt(max_js_hs - difficulty.stream);
 
     vector<float> temp_vec = skillset_vector(difficulty);
     float overall = AggregateScores(temp_vec, 0.f, 10.24f);
@@ -254,9 +254,9 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
 // ugly jack stuff
 float Calc::JackLoss(const vector<float>& j, float x) {
     float output = 0.f;
-    float floor = 1.f;
+    float ceiling = 1.f;
     float mod = 1.f;
-    float ceil = 1.15f;
+    float base_ceiling = 1.15f;
     float fscale = 1750.f;
     float prop = 0.75f;
     float mag = 250.f;
@@ -264,8 +264,8 @@ float Calc::JackLoss(const vector<float>& j, float x) {
     for (float i : j) {
         mod += ((i / (prop*x)) - 1) / mag;
         if (mod > 1.f)
-            floor += (mod - 1) / fscale;
-        mod = CalcClamp(mod, 1.f, ceil * sqrt(floor));
+            ceiling += (mod - 1) / fscale;
+        mod = CalcClamp(mod, 1.f, base_ceiling * sqrt(ceiling));
         i *= mod;
         if (x < i)
             output += 1.f - pow(x / (i * 0.96f), 1.5f);  //This can cause output to decrease if 0.96 * i < x < i
@@ -499,7 +499,7 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
         bool anyzero = lcol == 0 || rcol == 0;
         output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
 
-        dumbvalue += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
+        fingerbias += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
 
         if (logpatterns)
             std::cout << "an " << output[i] << std::endl;

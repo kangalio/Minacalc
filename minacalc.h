@@ -142,7 +142,7 @@ private:
     const float IntervalSpan = 0.5f; // Intervals of time we slice the chart at
     const bool logpatterns = false;
 
-    float dumbvalue = 1.f;
+    float fingerbias = 1.f;
 
     JackSeq j0;
     JackSeq j1;
