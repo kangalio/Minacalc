@@ -196,8 +196,8 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         downscale_chordjack_at_end = true;
 
 
-    dumbvalue /= static_cast<float>(nervIntervals.size());
-    float stupidvalue = CalcClamp(1.f - (dumbvalue - 2.55f), 0.85f, 1.f);
+    dumbvalue /= static_cast<float>(2 * nervIntervals.size());
+    float stupidvalue = CalcClamp(3.55f - dumbvalue, 0.85f, 1.f);
     difficulty.technical *= stupidvalue;
 
     if (stupidvalue <= 0.95f) {
