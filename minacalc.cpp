@@ -296,7 +296,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
 int Calc::fastwalk(const vector<NoteInfo>& NoteInfo, float music_rate) {
     int Interval = 0;
     for (auto i : NoteInfo) {
-        if (i.rowTime / music_rate >= static_cast<float>(Interval) * IntervalSpan)
+        while (i.rowTime / music_rate >= static_cast<float>(Interval) * IntervalSpan)
             ++Interval;
     }
     return Interval;
@@ -343,7 +343,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / music_rate;
 
-        if (scaledtime >= static_cast<float>(Interval + 1) * IntervalSpan) //This produces odd behavior because it should be while not if
+        while (scaledtime >= static_cast<float>(Interval + 1) * IntervalSpan)
             ++Interval;
 
         if (NoteInfo[i].notes & column) {
@@ -354,10 +354,6 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
         if (t == 0 && NoteInfo[i].notes != 0)
             nervIntervals[Interval].emplace_back(i);
     }
-    if (!nervIntervals.empty())  //This is a bug in the original calc
-        nervIntervals[nervIntervals.size() - 1].clear();
-    if (!AllIntervals.empty())  //This is also a bug in the original calc
-        AllIntervals[AllIntervals.size() - 1].clear();
     return AllIntervals;
 }
 
