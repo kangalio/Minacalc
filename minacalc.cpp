@@ -293,17 +293,8 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     return output;
 }
 
-int Calc::fastwalk(const vector<NoteInfo>& NoteInfo, float music_rate) {
-    int Interval = 0;
-    for (auto i : NoteInfo) {
-        while (i.rowTime / music_rate >= static_cast<float>(Interval) * IntervalSpan)
-            ++Interval;
-    }
-    return Interval;
-}
-
 void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
-    numitv = fastwalk(NoteInfo, music_rate);
+    numitv = static_cast<int>(std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
 
     ProcessedFingers fingers;
     for (int i = 0; i < 4; i++) {
