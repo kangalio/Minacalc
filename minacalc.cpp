@@ -73,10 +73,6 @@ inline float AggregateScores(const vector<float>& skillsets, float rating, float
     return rating + 2.f * resolution;
 }
 
-float normalizer(float x, float y, float z1, float z2) {
-    return x - x * CalcClamp(-(x / y)*z1*z2 + z1*z2 + z2, 0.f, z2);
-}
-
 unsigned int column_count(unsigned int note) {
     return note % 2 + note / 2 % 2 + note / 4 % 2 + note / 8 % 2;
 }
@@ -154,19 +150,12 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     else
         stam = Chisel(tech - 0.1f, 2.56f, score_goal, true, false, false, false, false);
 
-    js = normalizer(js, stream, 7.25f, 0.25f);
-    hs = normalizer(hs, stream, 6.5f, 0.3f);
-    hs = normalizer(hs, js, 11.5f, 0.15f);
-
-    float stambase = max(max(stream, tech* 0.96f), max(js, hs));
-    if (stambase == stream)
-        stambase *= 0.975f;
-
-    stam = normalizer(stam, stambase, 7.75f, 0.2f);
+    js *= 0.95f;
+    hs *= 0.95f;
+    stam *= 0.9f;
 
     float chordjack = jack * 0.75f;
-    float technorm = max(max(stream, js), hs);
-    tech = normalizer(tech, technorm, 8.f, .15f) * 0.97f;
+    tech *= 0.95f;
 
     DifficultyRating difficulty = DifficultyRating {0.0,
                                                     downscale_low_accuracy_scores(stream, score_goal),
@@ -187,7 +176,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
                                    max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream)) * 1.1f);
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
 
-    chordjack = normalizer(chordjack, difficulty.handstream, 5.5f, 0.3f) * CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
+    chordjack *= CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
 
     bool downscale_chordjack_at_end = false;
     if (chordjack > difficulty.jack)
@@ -237,7 +226,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     }
 
-    difficulty.jack *= 1.0075f;
+    difficulty.jack *= 0.925f;
 
     if (highest == difficulty.technical) {
         difficulty.technical -= CalcClamp(4.5f - difficulty.technical + difficulty.handstream, 0.f, 4.5f);
