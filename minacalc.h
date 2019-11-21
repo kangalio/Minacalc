@@ -88,7 +88,6 @@ public:
     static JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate);
 
     int numitv;
-    int fastwalk(const std::vector<NoteInfo>& NoteInfo, float music_rate);
 
     /*	Splits up the chart by each hand and calls ProcessFinger on each "track"
     before passing
