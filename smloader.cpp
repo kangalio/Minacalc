@@ -45,12 +45,12 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
             sm_text = sm_text.substr(next_tag_position + 1);
         }
     }
-    int next_bpm_index = 0;
-    float last_bpm = 120.f;
-    float last_bpm_time = 0.f;
-    float last_bpm_beat = 0.f;
     for (SMNotes& chart : raw_block)
         for (NoteInfo& timestamp : chart) {
+            int next_bpm_index = 0;
+            float last_bpm = 120.f;
+            float last_bpm_time = 0.f;
+            float last_bpm_beat = 0.f;
             while (next_bpm_index < bpms.size() && bpms[next_bpm_index].beat <= timestamp.rowTime) {
                 last_bpm_time += (bpms[next_bpm_index].beat - last_bpm_beat) * 240.f / last_bpm;
                 last_bpm_beat = bpms[next_bpm_index].beat;
@@ -90,7 +90,7 @@ SMNotes parse_main_block(stringstream& sm_text) {
             if (it == '1' || it == '2') {
                 notes += column_value;
             }
-            if (column_value == 8) {
+            if (!(it == '0' || it == '1' || it == '2' || it == '3' || it == '4' || it == 'M' || it == 'L' || it == 'F')) {
                 break;
             }
             column_value *= 2;

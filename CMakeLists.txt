@@ -3,4 +3,4 @@ project(minacalc)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(minacalc main.cpp minacalc.cpp minacalc.h NoteDataStructures.h smloader.cpp smloader.h)
+add_executable(minacalc main.cpp minacalc.cpp minacalc.h NoteDataStructures.h smloader.cpp smloader.h solocalc.cpp solocalc.h)

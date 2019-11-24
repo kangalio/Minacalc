@@ -1,5 +1,6 @@
 #include "minacalc.h"
 #include "smloader.h"
+#include "solocalc.h"
 #include <iostream>
 
 using std::cout;
@@ -35,7 +36,17 @@ std::vector<DifficultyRating> difficultyFromFile(const std::string& location) {
 
 int main(int argc, char *argv[]) {
     std::vector<DifficultyRating> rating;
-    if (argc > 1)
+    if (argc > 2) {
+        cout << "Solo Difficulty: ";
+        std::ifstream sm_file;
+        sm_file.open(argv[1]);
+        if (sm_file.is_open()) {
+            std::vector<std::vector<NoteInfo> > chart = load_from_file(sm_file);
+            for (auto& difficulty : chart) {
+                cout << soloCalc(difficulty, 1.0f, 0.93f) << endl;
+            }
+        }
+    } else if (argc > 1)
         rating = difficultyFromFile(argv[1]);
     else
         rating = difficultyFromFile("../chart.sm");
