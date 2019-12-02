@@ -440,15 +440,20 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
         int taps = 0;
         int jumps = 0;
         for (int row : interval) {
+            int columns = 0;
             if (NoteInfo[row].notes & firstNote) {
-                ++taps;
-                if (NoteInfo[row].notes & secondNote) {
-                    ++jumps;
-                    ++taps;
-                }
+                ++columns;
             }
+            if (NoteInfo[row].notes & secondNote) {
+                ++columns;
+            }
+            if (columns == 2) {
+                jumps++;
+                taps += 2; //this gets added twice intentionally to mimic mina's ratings more closely
+            }
+            taps += columns;
         }
-        output.push_back(taps != 0 ? pow(1 - (0.8f * static_cast<float>(jumps) / static_cast<float>(taps)), 0.25f) : 1.f);
+        output.push_back(taps != 0 ? pow(1 - (1.6f * static_cast<float>(jumps) / static_cast<float>(taps)), 0.25f) : 1.f);
 
         if (logpatterns)
             std::cout << "ohj " << output.back() << std::endl;
