@@ -323,7 +323,7 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / music_rate;
 
-        while (scaledtime >= static_cast<float>(Interval + 1) * IntervalSpan)
+        while (scaledtime > static_cast<float>(Interval + 1) * IntervalSpan)
             ++Interval;
 
         if (NoteInfo[i].notes & column) {
