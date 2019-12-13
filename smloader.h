@@ -9,7 +9,7 @@
 #include <fstream>
 #include "NoteDataStructures.h"
 
-typedef std::vector<NoteInfo> SMNotes;
+typedef std::vector<ChartInfo> SMNotes;
 
 struct BPM {
     float beat;
@@ -18,6 +18,6 @@ struct BPM {
 
 typedef std::vector<BPM> BPMs;
 
-std::vector<SMNotes> load_from_file(std::ifstream& sm_file);
+SMNotes load_from_file(std::ifstream& sm_file);
 
 #endif //MINACALC_SMLOADER_H

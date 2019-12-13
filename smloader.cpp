@@ -9,14 +9,14 @@
 using std::vector;
 using std::stringstream;
 using std::string;
-SMNotes parse_main_block(stringstream&);
+vector<NoteInfo> parse_main_block(stringstream&);
 BPMs parse_bpms_block(stringstream&);
 
-vector<SMNotes> load_from_file(std::ifstream& file) {
+SMNotes load_from_file(std::ifstream& file) {
     stringstream sm_buffer;
     sm_buffer << file.rdbuf();
     string sm_text = sm_buffer.str();
-    vector<SMNotes> raw_block;
+    SMNotes raw_block;
     BPMs bpms;
     while (!sm_text.empty()) {
         size_t next_tag_position = sm_text.find('#');
@@ -24,7 +24,14 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
             break;
         sm_text = sm_text.substr(next_tag_position + 1);
         if (sm_text.substr(0,5) == "NOTES") {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 3; i++) {
+                next_tag_position = sm_text.find(':');
+                if (next_tag_position == string::npos)
+                    break;
+                sm_text = sm_text.substr(next_tag_position + 1);
+            }
+            std::string difficulty_name = sm_text.substr(0,sm_text.find(':'));
+            for (int i = 0; i < 3; i++) {
                 next_tag_position = sm_text.find(':');
                 if (next_tag_position == string::npos)
                     break;
@@ -33,7 +40,7 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
             stringstream notes_block;
             next_tag_position = sm_text.find(';');
             notes_block << sm_text.substr(sm_text.find('\n')+1, next_tag_position-1);
-            raw_block.push_back(parse_main_block(notes_block));
+            raw_block.push_back(ChartInfo {difficulty_name, parse_main_block(notes_block)});
             sm_text = sm_text.substr(next_tag_position + 1);
         } else if (sm_text.substr(0,4) == "BPMS") {
             next_tag_position = sm_text.find(':');
@@ -45,8 +52,8 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
             sm_text = sm_text.substr(next_tag_position + 1);
         }
     }
-    for (SMNotes& chart : raw_block)
-        for (NoteInfo& timestamp : chart) {
+    for (ChartInfo& chart : raw_block)
+        for (NoteInfo& timestamp : chart.notes) {
             int next_bpm_index = 0;
             float last_bpm = 120.f;
             float last_bpm_time = 0.f;
@@ -62,8 +69,8 @@ vector<SMNotes> load_from_file(std::ifstream& file) {
     return raw_block;
 }
 
-SMNotes parse_main_block(stringstream& sm_text) {
-    SMNotes output;
+vector<NoteInfo> parse_main_block(stringstream& sm_text) {
+    vector<NoteInfo> output;
     int notes;
     int column_value;
     float measure_size = 0.f;

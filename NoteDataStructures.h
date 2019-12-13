@@ -3,10 +3,18 @@
 #ifndef __NDSTRUCTS__
 #define __NDSTRUCTS__
 
+#include <string>
+#include <vector>
+
 struct NoteInfo
 {
     unsigned int notes;
     float rowTime;
+};
+
+struct ChartInfo {
+    std::string difficultyName;
+    std::vector<NoteInfo> notes;
 };
 
 struct DifficultyRating {
@@ -18,6 +26,11 @@ struct DifficultyRating {
     float jack;
     float chordjack;
     float technical;
+};
+
+struct ChartRating {
+    std::string difficultyName;
+    DifficultyRating rating;
 };
 
 #endif
