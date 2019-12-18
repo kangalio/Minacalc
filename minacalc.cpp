@@ -571,6 +571,9 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
 
 // Function to generate SSR rating
 DifficultyRating MinaSDCalc(const vector<NoteInfo>& NoteInfo, float musicrate, float goal) {
+    if (NoteInfo.empty()) {
+        return DifficultyRating {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    }
     return std::make_unique<Calc>()->CalcMain(NoteInfo, musicrate, goal);
 }
 
