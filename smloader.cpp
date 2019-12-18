@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <cctype>
 #include "smloader.h"
 
 using std::vector;
@@ -94,11 +95,14 @@ vector<NoteInfo> parse_main_block(stringstream& sm_text) {
             continue;
         }
         for(char & it : line) {
+            if (it == '\n') {
+                break;
+            }
+            if (isspace(it)) {
+                continue;
+            }
             if (it == '1' || it == '2') {
                 notes += column_value;
-            }
-            if (!(it == '0' || it == '1' || it == '2' || it == '3' || it == '4' || it == 'M' || it == 'L' || it == 'F')) {
-                break;
             }
             column_value *= 2;
         }
