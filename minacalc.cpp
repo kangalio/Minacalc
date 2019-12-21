@@ -20,6 +20,20 @@ T CalcClamp(T x, T l, T h) {
 return x > h ? h : (x < l ? l : x);
 }
 
+template <typename F>
+float approximate(float value, float resolution, int num_iters, F is_too_low, bool limit_at_100 = false) {
+    for (int i = 0; i < num_iters; i++) {
+        while (is_too_low(value)) {
+            if (limit_at_100 && value > 100.f) return value;
+            value += resolution;
+        }
+        value -= resolution;
+        resolution /= 2.f;
+    }
+    
+    return value + 2.f * resolution;
+}
+
 inline float mean(const vector<float>& v) {
     return std::accumulate(begin(v), end(v), 0.f) / v.size();
 }
@@ -67,19 +81,14 @@ inline void DifficultyMSSmooth(vector<float>& input) {
 }
 
 inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution) {
-    float sum;
-    for (int iter = 1; iter <= 11; iter++){
-        do {
-            rating += resolution;
-            sum = 0.0f;
-            for (float i : skillsets) {
-                sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
-            }
-        } while (3 < sum);
-        rating -= resolution;
-        resolution /= 2.f;
-    }
-    return rating + 2.f * resolution;
+    auto is_too_low = [skillsets](float rating) {
+        float sum = 0.0f;
+        for (float i : skillsets) {
+            sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
+        }
+        return 3 < sum;
+    };
+    return approximate(rating, resolution, 11, is_too_low);
 }
 
 // Converts a row byte into the number of taps present in the row
@@ -426,28 +435,12 @@ float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
     return gotpoints / MaxPoints;
 }
 
-// Only flag `jack` is directly used here, `stamina`, `nps`, `js` and
-// `hs` are simply passed onto Hand::CalcInternal calls
-float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
-    for (int i = 0; i < 7; i++) {
-		float score = CalcScoreForPlayerSkill(player_skill, flags);
-		
-		if (score < score_goal) player_skill += resolution;
-		else player_skill -= resolution;
-		
-		// I don't think this can really happen
-		//if (player_skill > 100.f) return player_skill;
-		
-		resolution /= 2.f;
-	}
-    
-    // To conform with Mina's original code. This ensures that the
-    // player_skill approximation is guaranteed to be above the target
-    // value a tiny bit.
-    float score = CalcScoreForPlayerSkill(player_skill, flags);
-    if (score < score_goal) player_skill += 2.f * resolution;
-	
-	return player_skill;
+float Calc::Chisel(float player_skill_start, float resolution_start, float score_goal, ChiselFlags flags) {
+    auto is_too_low = [this, flags, score_goal](float player_skill) {
+        float score = CalcScoreForPlayerSkill(player_skill, flags);
+        return score < score_goal;
+    };
+    return approximate(player_skill_start, resolution_start, 7, is_too_low, true);
 }
 
 // Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms
