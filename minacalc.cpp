@@ -359,31 +359,26 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
     // Number of intervals
     numitv = static_cast<int>(std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
 
-    ProcessedFingers fingers;
-    for (int i = 0; i < 4; i++) {
-        fingers.emplace_back(ProcessFinger(NoteInfo, i, music_rate));
-    }
-
-    left_hand.InitDiff(fingers[0], fingers[1]);
-    left_hand.InitPoints(fingers[0], fingers[1]);
-    left_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 1, 2);
-    left_hand.anchorscale = Anchorscaler(NoteInfo, 1, 2);
-    left_hand.rollscale = RollDownscaler(fingers[0], fingers[1]);
-    left_hand.hsscale = HSDownscaler(NoteInfo);
-    left_hand.jumpscale = JumpDownscaler(NoteInfo);
-
-    right_hand.InitDiff(fingers[2], fingers[3]);
-    right_hand.InitPoints(fingers[2], fingers[3]);
-    right_hand.ohjumpscale = OHJumpDownscaler(NoteInfo, 4, 8);
-    right_hand.anchorscale = Anchorscaler(NoteInfo, 4, 8);
-    right_hand.rollscale = RollDownscaler(fingers[2], fingers[3]);
-    right_hand.hsscale = left_hand.hsscale;
-    right_hand.jumpscale = left_hand.jumpscale;
+    InitHand(left_hand, NoteInfo, 0, 1, music_rate);
+    InitHand(right_hand, NoteInfo, 2, 3, music_rate);
 
     j0 = SequenceJack(NoteInfo, 0, music_rate);
     j1 = SequenceJack(NoteInfo, 1, music_rate);
     j2 = SequenceJack(NoteInfo, 2, music_rate);
     j3 = SequenceJack(NoteInfo, 3, music_rate);
+}
+
+void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f2, float music_rate) {
+    Finger finger1 = ProcessFinger(note_info, f1, music_rate);
+    Finger finger2 = ProcessFinger(note_info, f2, music_rate);
+    
+    hand.InitDiff(finger1, finger2);
+    hand.InitPoints(finger1, finger2);
+    hand.ohjumpscale = OHJumpDownscaler(note_info, 1 << f1, 1 << f2);
+    hand.anchorscale = Anchorscaler(note_info, 1 << f1, 1 << f2);
+    hand.rollscale = RollDownscaler(finger1, finger2);
+    hand.hsscale = HSDownscaler(note_info);
+    hand.jumpscale = JumpDownscaler(note_info);
 }
 
 Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
