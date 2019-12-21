@@ -533,8 +533,6 @@ float Hand::CalcInternal(float x, ChiselFlags flags) {
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output;
 
-    std::cout << "sqrt(-4) = " << pow(-4, 0.5) << endl;
-
     for (const vector<int>& interval : nervIntervals) {
         int taps = 0;
         int jumps = 0;
@@ -600,14 +598,21 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
 
     for (size_t i = 0; i < nervIntervals.size(); i++) {
         unsigned int taps = 0;
-        unsigned int handtaps = 0;
+        unsigned int hands = 0;
         for (int row : nervIntervals[i]) {
             unsigned int notes = column_count(NoteInfo[row].notes);
             taps += notes;
             if (notes == 3)
-                handtaps++;
+                hands++;
         }
-        output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(handtaps) / static_cast<float>(taps)))) : 1.f;
+        if (taps == 0) {
+            output[i] = 1.f;
+        } else {
+            // Note that this can't ever be over 1/3
+            float hand_proportion = static_cast<float>(hands) / static_cast<float>(taps);
+            // Therefore this downscaling value can't ever be below ~0.903
+            output[i] = sqrt(sqrt(1 - hand_proportion));
+        }
 
         if (logpatterns)
             std::cout << "hs " << output[i] << std::endl;
@@ -630,7 +635,14 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
             if (notes == 2)
                 jumps++;
         }
-        output[i] = taps != 0 ? sqrt(sqrt(1 - (static_cast<float>(jumps) / static_cast<float>(taps) / 3.f))) : 1.f;
+        if (taps == 0) {
+            output[i] = 1.f;
+        } else {
+            // Note that this can't ever be over 1/2
+            float jump_proportion = static_cast<float>(jumps) / static_cast<float>(taps);
+            // Therefore this downscaling value can't ever be below ~0.955
+            output[i] = sqrt(sqrt(1 - jump_proportion / 3.f));
+        }
 
         if (logpatterns)
             std::cout << "ju " << output[i] << std::endl;
