@@ -17,6 +17,13 @@ typedef std::vector<std::vector<float>> Finger;
 typedef std::vector<Finger> ProcessedFingers;
 typedef std::vector<float> JackSeq; // Vector of a local jack speed difficulty for each row
 
+typedef int ChiselFlags;
+static ChiselFlags CHISEL_STAM = 1;
+static ChiselFlags CHISEL_JACK = 2;
+static ChiselFlags CHISEL_NPS = 4;
+static ChiselFlags CHISEL_JS = 8;
+static ChiselFlags CHISEL_HS = 16;
+
 /*
  * The comments in here contain the concept of 'points'. That's
  * referring to Wifescore points, but scaled to a max of 1 (instead of
@@ -60,7 +67,7 @@ public:
     scoring to assert the average of the distribution of point gain for each
     interval and then tallies up the result to produce an average total number
     of points achieved by this hand. */
-    float CalcInternal(float x, bool stam, bool nps, bool js, bool hs);
+    float CalcInternal(float x, ChiselFlags flags);
 
     std::vector<float> ohjumpscale, rollscale, hsscale, jumpscale, anchorscale;
     std::vector<int> v_itvpoints;	// Max points for each interval
@@ -124,11 +131,7 @@ public:
     float Chisel(float player_skill,
                  float resolution,
                  float score_goal,
-                 bool stamina,
-                 bool jack,
-                 bool nps,
-                 bool js,
-                 bool hs);
+                 ChiselFlags flags);
 
     std::vector<float> OHJumpDownscaler(const std::vector<NoteInfo>& NoteInfo,
                                    unsigned int t1,

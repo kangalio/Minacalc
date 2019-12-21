@@ -142,11 +142,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
 
     InitializeHands(NoteInfo, music_rate);
     TotalMaxPoints();
-    float stream = Chisel(0.1f, 10.24f, score_goal, false, false, true, false, false);
-    float js = Chisel(0.1f, 10.24f,  score_goal, false, false, true, true, false);
-    float hs = Chisel(0.1f, 10.24f,  score_goal, false, false, true, false, true);
-    float tech = Chisel(0.1f, 10.24f,  score_goal, false, false, false, false, false);
-    float jack = Chisel(0.1f, 10.24f,  score_goal, false, true, true, false, false);
+    float stream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS);
+    float js = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_JS);
+    float hs = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_HS);
+    float tech = Chisel(0.1f, 10.24f, score_goal, 0);
+    float jack = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_JACK);
 
     float techbase = max(stream, jack);
     tech *= CalcClamp(tech / techbase, 0.85f, 1.f);
@@ -154,13 +154,13 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float stam;
     if (stream > tech || js > tech || hs > tech)
         if (stream > js && stream > hs)
-            stam = Chisel(stream - 0.1f, 2.56f, score_goal, true, false, true, false, false);
+            stam = Chisel(stream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS);
         else if (js > hs)
-            stam = Chisel(js - 0.1f, 2.56f, score_goal, true, false, true, true, false);
+            stam = Chisel(js - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_JS);
         else
-            stam = Chisel(hs - 0.1f, 2.56f, score_goal, true, false, true, false, true);
+            stam = Chisel(hs - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_HS);
     else
-        stam = Chisel(tech - 0.1f, 2.56f, score_goal, true, false, false, false, false);
+        stam = Chisel(tech - 0.1f, 2.56f, score_goal, CHISEL_STAM);
 
     js *= 0.95f;
     hs *= 0.95f;
@@ -409,7 +409,7 @@ void Calc::TotalMaxPoints() {
 
 // Only flag `jack` is directly used here, `stamina`, `nps`, `js` and
 // `hs` are simply passed onto Hand::CalcInternal calls
-float Calc::Chisel(float player_skill, float resolution, float score_goal, bool stamina, bool jack, bool nps, bool js, bool hs) {
+float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
     //~ cout << "started with " << player_skill << endl;
     float gotpoints; // Number of points the player will be expected to achieve
     //~ cout << "chiseling..." << endl;
@@ -420,12 +420,12 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, bool 
             //~ cout << player_skill << " ";
             player_skill += resolution;
             
-            if (jack) {
+            if (flags & CHISEL_JACK) {
                 // Max achievable points, minus the points the player's losing from jack patterns
                 gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) - JackLoss(j3, player_skill);
             } else {
                 // Expected achieved points by left and right right, added together
-                gotpoints = left_hand.CalcInternal(player_skill, stamina, nps, js, hs) + right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
+                gotpoints = left_hand.CalcInternal(player_skill, flags) + right_hand.CalcInternal(player_skill, flags);
             }
 
         } while (gotpoints / MaxPoints < score_goal);
@@ -494,24 +494,24 @@ void Hand::StamAdjust(float x, vector<float>& diff) {
 }
 
 // `nps`: Whether to use MS or NPS diff estimates
-float Hand::CalcInternal(float x, bool stam, bool nps, bool js, bool hs) {
-    vector<float> diff = nps ? v_itvNPSdiff : v_itvMSdiff;
+float Hand::CalcInternal(float x, ChiselFlags flags) {
+    vector<float> diff = (flags & CHISEL_NPS) ? v_itvNPSdiff : v_itvMSdiff;
     
     for (size_t i = 0; i < diff.size(); ++i) {
         diff[i] *= anchorscale[i] * rollscale[i];
         
-        if (hs) {
+        if (flags & CHISEL_HS) {
             diff[i] *= sqrt(ohjumpscale[i]) * jumpscale[i];
-        } else if (js) {
+        } else if (flags & CHISEL_JS) {
             diff[i] *= hsscale[i] * hsscale[i] * sqrt(ohjumpscale[i]) * jumpscale[i];
-        } else if (nps) {
+        } else if (flags & CHISEL_NPS) {
             diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * ohjumpscale[i] * ohjumpscale[i] * jumpscale[i] * jumpscale[i];
         } else {
             diff[i] *= sqrt(ohjumpscale[i]);
         }
     }
 
-    if (stam)
+    if (flags & CHISEL_STAM)
         StamAdjust(x, diff);
     float output = 0.f;
     for (size_t i = 0; i < diff.size(); i++) {
