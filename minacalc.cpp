@@ -407,41 +407,45 @@ void Calc::TotalMaxPoints() {
         MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
 }
 
-// Find player_skill where gotpoints / MaxPoints ≈ score_goal
-
 float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
-	float gotpoints;
-	if (flags & CHISEL_JACK) {
-		// Max achievable points, minus the points the player's losing
-		// from jack patterns
-		gotpoints = MaxPoints
-				- JackLoss(j0, player_skill)
-				- JackLoss(j1, player_skill)
-				- JackLoss(j2, player_skill)
-				- JackLoss(j3, player_skill);
-	} else {
-		// Expected achieved points by left and right hand summed up
-		gotpoints = left_hand.CalcInternal(player_skill, flags);
-		gotpoints += right_hand.CalcInternal(player_skill, flags);
-	}
-	
-	return gotpoints / MaxPoints;
+    float gotpoints;
+    if (flags & CHISEL_JACK) {
+        // Max achievable points, minus the points the player's losing
+        // from jack patterns
+        gotpoints = MaxPoints
+                - JackLoss(j0, player_skill)
+                - JackLoss(j1, player_skill)
+                - JackLoss(j2, player_skill)
+                - JackLoss(j3, player_skill);
+    } else {
+        // Expected achieved points by left and right hand summed up
+        gotpoints = left_hand.CalcInternal(player_skill, flags);
+        gotpoints += right_hand.CalcInternal(player_skill, flags);
+    }
+    
+    return gotpoints / MaxPoints;
 }
 
 // Only flag `jack` is directly used here, `stamina`, `nps`, `js` and
 // `hs` are simply passed onto Hand::CalcInternal calls
 float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
-	for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 7; i++) {
 		float score = CalcScoreForPlayerSkill(player_skill, flags);
-		if (score < score_goal) {
-			player_skill += resolution;
-			if (player_skill > 100.f) return player_skill;
-		} else {
-			player_skill -= resolution;
-		}
+		
+		if (score < score_goal) player_skill += resolution;
+		else player_skill -= resolution;
+		
+		// I don't think this can really happen
+		//if (player_skill > 100.f) return player_skill;
 		
 		resolution /= 2.f;
 	}
+    
+    // To conform with Mina's original code. This ensures that the
+    // player_skill approximation is guaranteed to be above the target
+    // value a tiny bit.
+    float score = CalcScoreForPlayerSkill(player_skill, flags);
+    if (score < score_goal) player_skill += 2.f * resolution;
 	
 	return player_skill;
 }
