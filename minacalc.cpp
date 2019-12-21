@@ -81,14 +81,14 @@ inline void DifficultyMSSmooth(vector<float>& input) {
 }
 
 inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution) {
-    auto is_too_low = [skillsets](float rating) {
+    auto check_if_too_low = [skillsets](float rating) {
         float sum = 0.0f;
         for (float i : skillsets) {
-            sum += 2.f / std::erfc(0.5f*(i - rating)) - 1.f;
+            sum += 2.f / std::erfc(0.5f * (i - rating)) - 1.f;
         }
         return 3 < sum;
     };
-    return approximate(rating, resolution, 11, is_too_low);
+    return approximate(rating, resolution, 11, check_if_too_low);
 }
 
 // Converts a row byte into the number of taps present in the row
@@ -435,15 +435,18 @@ float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
     return gotpoints / MaxPoints;
 }
 
-float Calc::Chisel(float player_skill_start, float resolution_start, float score_goal, ChiselFlags flags) {
-    auto is_too_low = [this, flags, score_goal](float player_skill) {
+// Approximate player skill required to achieve `score_goal`. The
+// approximation can be influenced via the `flags`.
+float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
+    auto check_if_too_low = [this, flags, score_goal](float player_skill) {
         float score = CalcScoreForPlayerSkill(player_skill, flags);
         return score < score_goal;
     };
-    return approximate(player_skill_start, resolution_start, 7, is_too_low, true);
+    return approximate(player_skill, resolution, 7, check_if_too_low, true);
 }
 
 // Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms
+// which could also be expressed as 1.375 * avg_nps.
 float Hand::CalcMSEstimate(vector<float>& input) {
     if (input.empty())
         return 0.f;
@@ -530,6 +533,8 @@ float Hand::CalcInternal(float x, ChiselFlags flags) {
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output;
 
+    std::cout << "sqrt(-4) = " << pow(-4, 0.5) << endl;
+
     for (const vector<int>& interval : nervIntervals) {
         int taps = 0;
         int jumps = 0;
@@ -547,7 +552,13 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
             }
             taps += columns;
         }
-        output.push_back(taps != 0 ? pow(1 - (1.6f * static_cast<float>(jumps) / static_cast<float>(taps)), 0.25f) : 1.f);
+        if (taps == 0) {
+            output.push_back(1);
+        } else {
+            float jump_proportion = static_cast<float>(jumps) / static_cast<float>(taps);
+            // When 62.5% of taps are jumps, the downscaler will reach 0
+            output.push_back(pow(1 - (1.6f * jump_proportion), 0.25f));
+        }
 
         if (logpatterns)
             std::cout << "ohj " << output.back() << std::endl;
