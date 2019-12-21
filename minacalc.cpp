@@ -407,36 +407,43 @@ void Calc::TotalMaxPoints() {
         MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
 }
 
+// Find player_skill where gotpoints / MaxPoints ≈ score_goal
+
+float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
+	float gotpoints;
+	if (flags & CHISEL_JACK) {
+		// Max achievable points, minus the points the player's losing
+		// from jack patterns
+		gotpoints = MaxPoints
+				- JackLoss(j0, player_skill)
+				- JackLoss(j1, player_skill)
+				- JackLoss(j2, player_skill)
+				- JackLoss(j3, player_skill);
+	} else {
+		// Expected achieved points by left and right hand summed up
+		gotpoints = left_hand.CalcInternal(player_skill, flags);
+		gotpoints += right_hand.CalcInternal(player_skill, flags);
+	}
+	
+	return gotpoints / MaxPoints;
+}
+
 // Only flag `jack` is directly used here, `stamina`, `nps`, `js` and
 // `hs` are simply passed onto Hand::CalcInternal calls
 float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
-    //~ cout << "started with " << player_skill << endl;
-    float gotpoints; // Number of points the player will be expected to achieve
-    //~ cout << "chiseling..." << endl;
-    for (int iter = 1; iter <= 7; iter++) {
-        do {
-            if (player_skill > 100.f)
-                return player_skill;
-            //~ cout << player_skill << " ";
-            player_skill += resolution;
-            
-            if (flags & CHISEL_JACK) {
-                // Max achievable points, minus the points the player's losing from jack patterns
-                gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) - JackLoss(j3, player_skill);
-            } else {
-                // Expected achieved points by left and right right, added together
-                gotpoints = left_hand.CalcInternal(player_skill, flags) + right_hand.CalcInternal(player_skill, flags);
-            }
-
-        } while (gotpoints / MaxPoints < score_goal);
-        player_skill -= resolution;
-        //~ cout << "current estimate: " << player_skill << endl;
-        resolution /= 2.f;
-    }
-    //~ cout << "finalized with " << player_skill << endl << endl;
-    // Return the most accurate value that will result in a score just
-    // above the score goal, instead of just below
-    return player_skill + 2.f * resolution;
+	for (int i = 0; i < 7; i++) {
+		float score = CalcScoreForPlayerSkill(player_skill, flags);
+		if (score < score_goal) {
+			player_skill += resolution;
+			if (player_skill > 100.f) return player_skill;
+		} else {
+			player_skill -= resolution;
+		}
+		
+		resolution /= 2.f;
+	}
+	
+	return player_skill;
 }
 
 // Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms

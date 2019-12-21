@@ -62,7 +62,7 @@ public:
     appropriate value to be around 0.8. The multiplier is scaled to the
     proportionate difference in player skill. */
     void StamAdjust(float x, std::vector<float>& diff);
-
+	
     /*	For a given player skill level x, invokes the function used by wife
     scoring to assert the average of the distribution of point gain for each
     interval and then tallies up the result to produce an average total number
@@ -132,6 +132,9 @@ public:
                  float resolution,
                  float score_goal,
                  ChiselFlags flags);
+    
+    // Used in Chisel()
+    float CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags);
 
     std::vector<float> OHJumpDownscaler(const std::vector<NoteInfo>& NoteInfo,
                                    unsigned int t1,
