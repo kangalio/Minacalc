@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 using std::vector;
 using std::min;
@@ -191,7 +195,9 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     if (finger_bias_scaling <= 0.95f) {
         difficulty.jack *= 1.f + (1.f - sqrt(finger_bias_scaling));
     }
-
+    
+	// If HS or JS is higher than stream, nerf stream by
+	// sqrt((hs or js) - stream)
     float max_js_hs = max(difficulty.handstream, difficulty.jumpstream);
     if (difficulty.stream < max_js_hs)
         difficulty.stream -= sqrt(max_js_hs - difficulty.stream);
@@ -239,7 +245,10 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     return difficulty;
 }
 
+int jack_loss_n = 0;
 // ugly jack stuff
+// Parameter j = JackSeq
+// Parameter x = potential player rating
 float Calc::JackLoss(const vector<float>& j, float x) {
     float output = 0.f;
     float ceiling = 1.f;
@@ -247,10 +256,28 @@ float Calc::JackLoss(const vector<float>& j, float x) {
     float base_ceiling = 1.15f;
     float fscale = 1750.f;
     float prop = 0.75f;
-    float mag = 250.f;
-
-    for (float i : j) {
-        mod += ((i / (prop*x)) - 1) / mag;
+    float mag = 250.f; // Jack diff multiplier
+    
+    float output = 0.f;
+    float floor = 1.f;
+    
+    if (jack_loss_n++ != 5) {
+		//return 0;
+	}
+    
+    //cout << "JackLoss..." << endl;
+    for (float jd : j) { // Iterate local jack difficulties
+		//~ cout << "(" << jd << ") ";
+		//~ cout << "output: " << output;
+		//~ cout << ", floor: " << floor;
+		//~ cout << ", mod: " << mod << endl;
+		
+        //mod += ((i / (prop*x)) - 1) / mag;
+        //mod += ((jd / (0.75f*x)) - 1) / 250.f;
+        // Decrease if x < 4/3*jd
+        // Decrease if jack difficulty is more than 133% player skill
+        mod += ( (jd/x)*4/3 - 1) / 250.f;
+        
         if (mod > 1.f)
             ceiling += (mod - 1) / fscale;
         mod = CalcClamp(mod, 1.f, base_ceiling * sqrt(ceiling));
@@ -258,31 +285,60 @@ float Calc::JackLoss(const vector<float>& j, float x) {
         if (x < i)
             output += 1.f - pow(x / (i * 0.96f), 1.5f);  //This can cause output to decrease if 0.96 * i < x < i
     }
+    
     return CalcClamp(7.f * output, 0.f, 10000.f);
 }
 
+// Go through every note and determine a local jack speed difficulty at
+// each place. That means:
+//  1) taking the average of the last three note intervals,
+//  2) (maybe bump that if the recent jack was really fast)
+//  3) calculating 2800ms/interval_avg,
+//  4) and maxing that out at the equivalent of 56 local NPS
+// Returns a vector of each local jack speed difficulty
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     vector<float> output;
     float last = -5.f;
+    
+    // Three most recent note intervals in ms. interval3 is the most
+    // recent one.
     float interval1;
     float interval2 = 0.f;
     float interval3 = 0.f;
+    
     unsigned int track = 1u << t;
 
     for (auto i : NoteInfo) {
-        if (i.notes & track) {
+        if (i.notes & track) { // If there's notes on the track
             float current_time = i.rowTime / music_rate;
             interval1 = interval2;
             interval2 = interval3;
             interval3 = 1000.f * (current_time - last);
             last = current_time;
-            output.emplace_back(min( 2800.f / min((interval1 + interval2 + interval3) / 3.f, interval3 * 1.4f), 50.f));
+            
+            // Take the average of last three note intervals
+            float interval_avg = (interval1 + interval2 + interval3) / 3.f;
+            
+            // If the last interval was really fast, jump to using that
+            // instead of the average
+            if (interval3 * 1.4 < interval_avg)
+				interval_avg = interval3 * 1.4;
+			
+			// Difficulty for the 'local' jack speed
+			// NPS examples: 1 => 2.8; 2 => 5.6; 10 => 28
+            float a = 2800.f / interval_avg;
+            
+            // Max out local jack speed difficulty at 56 NPS
+            float v = min( a, 50.f);
+            
+            output.emplace_back(v);
         }
     }
     return output;
 }
 
 void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
+	// Number of intervals
     numitv = static_cast<int>(std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
 
     ProcessedFingers fingers;
@@ -342,24 +398,39 @@ void Calc::TotalMaxPoints() {
         MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
 }
 
+// Only flag `jack` is directly used here, all others are only passed
+// onto Hand::CalcInternal calls
 float Calc::Chisel(float player_skill, float resolution, float score_goal, bool stamina, bool jack, bool nps, bool js, bool hs) {
-    float gotpoints;
+	cout << "started with " << player_skill << endl;
+    float gotpoints; // Number of points the player will be expected to achieve
+    //~ cout << "chiseling..." << endl;
     for (int iter = 1; iter <= 7; iter++) {
         do {
             if (player_skill > 100.f)
                 return player_skill;
+            //~ cout << player_skill << " ";
             player_skill += resolution;
-            gotpoints = jack ?
-                    MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) - JackLoss(j3, player_skill)
-                    : left_hand.CalcInternal(player_skill, stamina, nps, js, hs) + right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
+            
+            if (jack) {
+				// Max achievable points, minus the points the player's losing from jack patterns
+				gotpoints = MaxPoints - JackLoss(j0, player_skill) - JackLoss(j1, player_skill) - JackLoss(j2, player_skill) - JackLoss(j3, player_skill);
+			} else {
+				// Expected achieved points by left and right right, added together
+				gotpoints = left_hand.CalcInternal(player_skill, stamina, nps, js, hs) + right_hand.CalcInternal(player_skill, stamina, nps, js, hs);
+			}
 
         } while (gotpoints / MaxPoints < score_goal);
         player_skill -= resolution;
+        //~ cout << "current estimate: " << player_skill << endl;
         resolution /= 2.f;
     }
+    cout << "finalized with " << player_skill << endl << endl;
+    // Return the most accurate value that will result in a score just
+    // above the score goal, instead of just below
     return player_skill + 2.f * resolution;
 }
 
+// Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms
 float Hand::CalcMSEstimate(vector<float>& input) {
     if (input.empty())
         return 0.f;

@@ -15,7 +15,13 @@
 typedef std::vector<DifficultyRating> MinaSD;
 typedef std::vector<std::vector<float>> Finger;
 typedef std::vector<Finger> ProcessedFingers;
-typedef std::vector<float> JackSeq;
+typedef std::vector<float> JackSeq; // Vector of a local jack speed difficulty for each row
+
+/*
+ * The comments in here contain the concept of 'points'. That's
+ * referring to Wifescore points, but scaled to a max of 1 (instead of
+ * 2 as usually)
+ */
 
 /*	The difficulties of each hand tend to be independent from one another. This
 is not absolute, as in the case of polyrhythm trilling. However the goal of the
@@ -57,7 +63,7 @@ public:
     float CalcInternal(float x, bool stam, bool nps, bool js, bool hs);
 
     std::vector<float> ohjumpscale, rollscale, hsscale, jumpscale, anchorscale;
-    std::vector<int> v_itvpoints;	// Point allotment for each interval
+    std::vector<int> v_itvpoints;	// Max points for each interval
     std::vector<float> v_itvNPSdiff, v_itvMSdiff;  // Calculated difficulty for each interval
 private:
     const bool SmoothDifficulty =
@@ -84,9 +90,14 @@ public:
     DifficultyRating CalcMain(const std::vector<NoteInfo>& NoteInfo, float music_rate, float score_goal);
 
     // redo these asap
+    // Calculates the amount of points a player with player skill
+    // `x` will lose on a JackSeq `j`
     static float JackLoss(const std::vector<float>& j, float x);
+    // t=track index
+    // Generates a JackSeq from NoteInfo
     static JackSeq SequenceJack(const std::vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate);
-
+	
+	// Number of intervals
     int numitv;
 
     /*	Splits up the chart by each hand and calls ProcessFinger on each "track"
