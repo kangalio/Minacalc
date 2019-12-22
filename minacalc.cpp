@@ -213,6 +213,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     difficulty.stamina *= shortstamdownscaler * 0.985f * lotquaddownscaler;
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
     
+    // Cap stamina to not be too far above the other skillsets
     float max_stream_jack_hs_js = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
     difficulty.stamina = CalcClamp(difficulty.stamina, 1.f, max_stream_jack_hs_js * 1.1f);
 
@@ -299,34 +300,33 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     return difficulty;
 }
 
-int jack_loss_n = 0;
 // ugly jack stuff
 // Parameter j = JackSeq
-// Parameter x = potential player rating
-float Calc::JackLoss(const vector<float>& j, float x) {
+// Parameter skill = player skill
+float Calc::JackLoss(const vector<float>& j, float skill) {
+    const float base_ceiling = 1.15f; // Jack multiplier max
+    const float fscale = 1750.f; // How fast ceiling rises
+    const float prop = 0.75f; // Proportion of player difficulty at which jack tax begins
+    const float mag = 250.f; // Jack diff multiplier
     float output = 0.f;
     float ceiling = 1.f;
     float mod = 1.f;
-    float base_ceiling = 1.15f;
-    float fscale = 1750.f;
-    float prop = 0.75f;
-    float mag = 250.f; // Jack diff multiplier
     
-    for (float jd : j) { // Iterate local jack difficulties
-        // Decrease if jack difficulty is more than 133% player skill
-        mod += ( (jd/x)*4/3 - 1) / 250.f;
+    for (float jd : j) { // Iterate interval's jack difficulties
+        // If
+        // Decrease if jack difficulty is over 133% of player skill
+        mod += ((jd/(prop*skill)) - 1) / mag;
         
         if (mod > 1.f)
             ceiling += (mod - 1) / fscale;
         
-        // Clamp mod between 1 and 1.15
         mod = CalcClamp(mod, 1.f, base_ceiling * sqrt(ceiling));
         
         jd *= mod;
         
-        if (x < jd) { // If player skill below jack diffiulty
+        if (skill < jd) { // If player skill below jack diffiulty
             // This can cause output to decrease if 0.96 * i < x < i
-            output += 1.f - pow(x / (jd * 0.96f), 1.5f);
+            output += 1.f - pow(skill / (jd * 0.96f), 1.5f);
         }
     }
     
@@ -335,10 +335,11 @@ float Calc::JackLoss(const vector<float>& j, float x) {
 
 // Go through every note and determine a local jack speed difficulty at
 // each place. That means:
-//  1) taking the average of the last three note intervals,
-//  2) (maybe bump that if the recent jack was really fast)
+//  1) taking the average of the most recent three note intervals,
+//  2) (maybe bump that if the recent jack was really fast, i.e. minijack)
 //  3) calculating 2800ms/interval_avg,
 //  4) and maxing that out at the equivalent of 56 local NPS
+// nps
 // Returns a vector of each local jack speed difficulty
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     vector<float> output;
@@ -350,32 +351,33 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     float interval2 = 0.f;
     float interval3 = 0.f;
     
-    unsigned int track = 1u << t;
+    unsigned int column = 1u << t;
 
-    for (auto i : NoteInfo) {
-        if (i.notes & track) { // If there's notes on the track
-            float current_time = i.rowTime / music_rate;
+    for (auto row : NoteInfo) {
+        if (row.notes & column) {
+            float scaledtime = row.rowTime / music_rate;
             interval1 = interval2;
             interval2 = interval3;
-            interval3 = 1000.f * (current_time - last);
-            last = current_time;
+            interval3 = 1000.f * (scaledtime - last);
+            last = scaledtime;
             
             // Take the average of last three note intervals
             float interval_avg = (interval1 + interval2 + interval3) / 3.f;
             
-            // If the last interval was really fast, jump to using that
-            // instead of the average
-            if (interval3 * 1.4 < interval_avg)
-                interval_avg = interval3 * 1.4;
+            // If the last interval was really fast, use that instead of
+            // the average
+            interval_avg = min(interval_avg, interval3 * 1.4f);
             
             // Difficulty for the 'local' jack speed
             // For example 1 NPS => 2.8; 2 NPS => 5.6; 10 NPS => 28
-            float a = 2800.f / interval_avg;
+            float local_nps = 1000.f / interval_avg;
+            float jack_difficulty = 2.8f * local_nps;
             
-            // Max out local jack speed difficulty at 56 NPS
-            float v = min(a, 50.f);
+            // Max out local jack speed difficulty at an equivalent of 
+            // ~17.857 NPS, I think
+            jack_difficulty = min(jack_difficulty, 50.f);
             
-            output.emplace_back(v);
+            output.emplace_back(jack_difficulty);
         }
     }
     return output;
@@ -385,6 +387,7 @@ void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
     // Number of intervals
     numitv = static_cast<int>(std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
 
+    nervIntervals = vector<vector<int>>(numitv, vector<int>());
     InitHand(left_hand, NoteInfo, 0, 1, music_rate);
     InitHand(right_hand, NoteInfo, 2, 3, music_rate);
 
@@ -400,6 +403,7 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
     
     hand.InitDiff(finger1, finger2);
     hand.InitPoints(finger1, finger2);
+    
     hand.ohjumpscale = OHJumpDownscaler(note_info, 1 << f1, 1 << f2);
     hand.anchorscale = Anchorscaler(note_info, 1 << f1, 1 << f2);
     hand.rollscale = RollDownscaler(finger1, finger2);
@@ -408,28 +412,30 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
 }
 
 Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
-    int Interval = 0;
+    int interval_i = 0;
     float last = -5.f;
-    Finger AllIntervals(numitv,vector<float>());
-    if (t == 0)
-        nervIntervals = vector<vector<int>>(numitv, vector<int>());
+    Finger all_intervals(numitv, vector<float>());
     unsigned int column = 1u << t;
 
     for (size_t i = 0; i < NoteInfo.size(); i++) {
         float scaledtime = NoteInfo[i].rowTime / music_rate;
 
-        while (scaledtime > static_cast<float>(Interval + 1) * IntervalSpan)
-            ++Interval;
+        interval_i = scaledtime / IntervalSpan;
 
         if (NoteInfo[i].notes & column) {
-            AllIntervals[Interval].emplace_back(CalcClamp(1000 * (scaledtime - last), 40.f, 5000.f));
+            float interval_ms = 1000 * (scaledtime - last);
+            all_intervals[interval_i].emplace_back(CalcClamp(interval_ms, 40.f, 5000.f));
             last = scaledtime;
         }
 
+        // This is only executed on the first call of this function.
+        // It's hacky, and should be moved out of here, because it's not
+        // part of the finger calculation process.
         if (t == 0 && NoteInfo[i].notes != 0)
-            nervIntervals[Interval].emplace_back(i);
+            nervIntervals[interval_i].emplace_back(i);
     }
-    return AllIntervals;
+    
+    return all_intervals;
 }
 
 void Calc::TotalMaxPoints() {
@@ -467,7 +473,7 @@ float Calc::Chisel(float player_skill, float resolution, float score_goal, Chise
 }
 
 // Looks at 6 smallest note intervals and returns 1375 / avg_interval_ms
-// which could also be expressed as 1.375 * avg_nps.
+// which could also be expressed as 1.375 * avg_intervals_per_second.
 float Hand::CalcMSEstimate(vector<float>& input) {
     if (input.empty())
         return 0.f;
@@ -492,20 +498,22 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
     v_itvMSdiff = vector<float>(f1.size());
 
     for (size_t i = 0; i < f1.size(); i++) {
-        // 1.6 * nps overall
-        float nps = 1.6f * static_cast<float>(f1[i].size() + f2[i].size());
-        float left_difficulty = CalcMSEstimate(f1[i]);
-        float right_difficulty = CalcMSEstimate(f2[i]);
-        // 1.375 * nps on one hand in six smallest intervals
-        float difficulty = max(left_difficulty, right_difficulty);
-        v_itvNPSdiff[i] = basescaler * nps;
-        v_itvMSdiff[i] = basescaler * (5.f * difficulty + 4.f * nps) / 9.f;
+        float nps_diff = 1.6f * static_cast<float>(f1[i].size() + f2[i].size());
+        
+        float left_ms_diff = CalcMSEstimate(f1[i]);
+        float right_ms_diff = CalcMSEstimate(f2[i]);
+        float ms_diff = max(left_ms_diff, right_ms_diff);
+        
+        v_itvNPSdiff[i] = basescaler * nps_diff;
+        v_itvMSdiff[i] = basescaler * (5.f * ms_diff + 4.f * nps_diff) / 9.f;
     }
     Smooth(v_itvNPSdiff, 0.f);
     if (SmoothDifficulty)
         DifficultyMSSmooth(v_itvMSdiff);
 }
 
+// Fills in the v_itvpoints vector which holds the max number of points
+// for each interval
 void Hand::InitPoints(const Finger& f1, const Finger& f2) {
     for (size_t i = 0; i < f1.size(); i++)
         v_itvpoints.emplace_back(static_cast<int>(f1[i].size()) + static_cast<int>(f2[i].size()));
@@ -514,23 +522,29 @@ void Hand::InitPoints(const Finger& f1, const Finger& f2) {
 void Hand::StamAdjust(float x, vector<float>& diff) {
     float floor = 1.f;          // stamina multiplier min (increases as chart advances)
     float mod = 1.f;            // multiplier
-    float avs1;
-    float avs2 = 0.f;
+    float last_diff = 0.f;
 
-    for (float & i : diff) {
-        avs1 = avs2;
-        avs2 = i;
-        float ebb = (avs1 + avs2) / 2;
-        mod += ((ebb / (prop*x)) - 1) / mag;
+    for (float& i : diff) {
+        // Move-average the diffs with n=2
+        float diff_avg = (last_diff + i) / 2;
+        last_diff = i;
+        
+        // Higher number -> harder to sustain this difficulty for player
+        float tax = diff_avg / (prop*x);
+        mod += (tax - 1) / mag;
+        
+        // If this section is particularly difficult, deplete stamina
+        // a bit by raising the multiplier floor
         if (mod > 1.f)
             floor += (mod - 1) / fscale;
+        
+        // Cap and apply multiplier
         mod = CalcClamp(mod, floor, ceil);
         i *= mod;
     }
 }
 
-// `nps`: Whether to use MS or NPS diff estimates
-float Hand::CalcInternal(float x, ChiselFlags flags) {
+float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
     vector<float> diff = (flags & CHISEL_NPS) ? v_itvNPSdiff : v_itvMSdiff;
     
     for (size_t i = 0; i < diff.size(); ++i) {
@@ -546,17 +560,26 @@ float Hand::CalcInternal(float x, ChiselFlags flags) {
             diff[i] *= sqrt(ohjumpscale[i]);
         }
     }
-
+    
     if (flags & CHISEL_STAM)
-        StamAdjust(x, diff);
-    float output = 0.f;
+        StamAdjust(player_skill, diff);
+    
+    // Now, calculate the number of points the player will be expected
+    // to achieve, using the individual interval's difficulties.
+    
+    float total_achievable_points = 0.f;
     for (size_t i = 0; i < diff.size(); i++) {
-        float delta = v_itvpoints[i];
-        if (x <= diff[i])
-            delta *= pow(x / diff[i], 1.8f);
-        output += delta;
+        float achievable_points = v_itvpoints[i];
+        
+        // If player skill below required skill for this interval
+        if (player_skill <= diff[i]) {
+            // Decrease the number of points the player will achieve
+            achievable_points *= pow(player_skill / diff[i], 1.8f);
+        }
+        
+        total_achievable_points += achievable_points;
     }
-    return output;
+    return total_achievable_points;
 }
 
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
@@ -596,6 +619,8 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
     return output;
 }
 
+// This function has an ugly side effect! It calculate `fingerbias`,
+// which should definitely not be done here!
 vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
@@ -609,10 +634,20 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
                 ++rcol;
         }
         bool anyzero = lcol == 0 || rcol == 0;
-        output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
         
         float smaller_col = static_cast<float>(min(lcol, rcol));
         float larger_col = static_cast<float>(max(lcol, rcol));
+        
+        if (anyzero) {
+            output[i] = 1.f;
+        } else {
+            // Can range from ~0.881 (when the cols have exactly the
+            // same number of notes) to approaching 1 when one column
+            // has way more notes than the other.
+            output[i] = CalcClamp(sqrt(1 - (smaller_col / larger_col / 4.45f)), 0.8f, 1.05f);
+        }
+        
+        // Pls move this out of here in the future
         fingerbias += (larger_col + 2.f) / (smaller_col + 1.f);
 
         if (logpatterns)
@@ -688,6 +723,7 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
     vector<float> output(f1.size());    //this is slightly problematic because if one finger is longer than the other
                                         //you could potentially have different results with f1 and f2 switched
     for (size_t i = 0; i < f1.size(); i++) {
+        // If there is none or only one note in this interval, skip
         if (f1[i].size() + f2[i].size() <= 1) {
             output[i] = 1.f;
             continue;
