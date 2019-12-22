@@ -49,7 +49,9 @@ inline float cv(const vector<float> &input) {
 }
 
 inline float downscale_low_accuracy_scores(float f, float sg) {
-    return sg >= 0.93f ? f : min(max(f - sqrt(0.93f - sg), 0.f), 100.f);
+    if (sg >= 0.93f) return f;
+    // This clamp is practically useless
+    return CalcClamp(f - sqrt(0.93f - sg), 0.f, 100.f);
 }
 
 // Moving average with n=3. The `neutral` value is used for the
@@ -80,6 +82,8 @@ inline void DifficultyMSSmooth(vector<float>& input) {
     }
 }
 
+// Returns approximately the skillset rating plus 0.609 (That number
+// varies a little depending on the variations of the skillsets)
 inline float AggregateScores(const vector<float>& skillsets, float rating, float resolution) {
     auto check_if_too_low = [skillsets](float rating) {
         float sum = 0.0f;
@@ -131,22 +135,35 @@ float highest_difficulty(const DifficultyRating& difficulty) {
 }
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
-    float grindscaler = CalcClamp(0.93f + (0.07f * (NoteInfo.back().rowTime - 30.f) / 30.f), 0.93f, 1.f)
-            * CalcClamp(0.873f + (0.13f * (NoteInfo.back().rowTime - 15.f) / 15.f), 0.87f, 1.f);
-
-    float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (NoteInfo.back().rowTime - 150.f) / 150.f), 0.9f, 1.f);
+    float last_row_time = NoteInfo.back().rowTime;
+    
+    // last_row_time: 30 -> 0.93; 60 -> 1.00
+    float grindscaler = 0.93f + 0.07f * CalcClamp(last_row_time / 30.f - 1.f, 0.f, 1.f);
+    // last_row_time: 9.8 -> 0.87; 234.8 -> 1.00
+    grindscaler *= CalcClamp(0.873f + (0.13f * (last_row_time / 15.f - 1.f)), 0.87f, 1.f);
+    
+    // last_row_time: 150 -> 0.9; 300 -> 1.0
+    float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (last_row_time - 150.f) / 150.f), 0.9f, 1.f);
 
     float jprop = chord_proportion(NoteInfo, 2);
+    // jprop: -0.5 -> 0.8; 0.5 -> 1
+    // jprop: 0 -> 0.9; 0.5 -> 1
     float nojumpsdownscaler = CalcClamp(0.8f + (0.2f * (jprop + 0.5f)), 0.8f, 1.f);
+    // jprop: 0.43 -> 1; 0.85 -> 0.85
     float manyjumpsdownscaler = CalcClamp(1.43f - jprop, 0.85f, 1.f);
 
     float hprop = chord_proportion(NoteInfo, 3);
+    // hprop: -0.75 -> 0.8; 0.25 -> 1
+    // hprop: 0 -> 0.95; 0.25 -> 1
     float nohandsdownscaler = CalcClamp(0.8f + (0.2f * (hprop + 0.75f)), 0.8f, 1.f);
+    // hprop: 0.23 -> 1; 0.38 -> 0.85
     float allhandsdownscaler = CalcClamp(1.23f - hprop, 0.85f, 1.f);
 
     float qprop = chord_proportion(NoteInfo, 4);
+    // qprop: 0.13 -> 1; 0.28 -> 0.85
     float lotquaddownscaler = CalcClamp(1.13f - qprop, 0.85f, 1.f);
 
+    // jprop + hprop: 0.625 -> 1; 0.775 -> 0.85
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
     InitializeHands(NoteInfo, music_rate);
@@ -174,28 +191,30 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     js *= 0.95f;
     hs *= 0.95f;
     stam *= 0.9f;
-
-    float chordjack = jack * 0.75f;
     tech *= 0.95f;
 
-    DifficultyRating difficulty = DifficultyRating {0.0,
-                                                    downscale_low_accuracy_scores(stream, score_goal),
-                                                    downscale_low_accuracy_scores(js, score_goal),
-                                                    downscale_low_accuracy_scores(hs, score_goal),
-                                                    downscale_low_accuracy_scores(stam, score_goal),
-                                                    downscale_low_accuracy_scores(jack, score_goal),
-                                                    downscale_low_accuracy_scores(chordjack, score_goal),
-                                                    downscale_low_accuracy_scores(tech, score_goal)
-    };
+    float chordjack = jack * 0.75f;
 
+    DifficultyRating difficulty = DifficultyRating {
+            0.0, // Overall rating is not set at this point
+            downscale_low_accuracy_scores(stream, score_goal),
+            downscale_low_accuracy_scores(js, score_goal),
+            downscale_low_accuracy_scores(hs, score_goal),
+            downscale_low_accuracy_scores(stam, score_goal),
+            downscale_low_accuracy_scores(jack, score_goal),
+            downscale_low_accuracy_scores(chordjack, score_goal),
+            downscale_low_accuracy_scores(tech, score_goal)};
+    
     chordjack = difficulty.handstream;
-
+    
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
     difficulty.jumpstream *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
     difficulty.handstream *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
-    difficulty.stamina = CalcClamp(difficulty.stamina * shortstamdownscaler * 0.985f * lotquaddownscaler, 1.f,
-                                   max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream)) * 1.1f);
+    difficulty.stamina *= shortstamdownscaler * 0.985f * lotquaddownscaler;
     difficulty.technical *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler * 1.01f;
+    
+    float max_stream_jack_hs_js = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
+    difficulty.stamina = CalcClamp(difficulty.stamina, 1.f, max_stream_jack_hs_js * 1.1f);
 
     chordjack *= CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
 
@@ -206,6 +225,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         downscale_chordjack_at_end = true;
 
     fingerbias /= static_cast<float>(2 * nervIntervals.size());
+    // fingerbias: 2.55 -> 1; 2.7 -> 0.85
     float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
     difficulty.technical *= finger_bias_scaling;
 
@@ -221,6 +241,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     if (difficulty.stream < max_js_hs)
         difficulty.stream -= sqrt(max_js_hs - difficulty.stream);
 
+    // Set first overall rating
     vector<float> temp_vec = skillset_vector(difficulty);
     float overall = AggregateScores(temp_vec, 0.f, 10.24f);
     difficulty.overall = downscale_low_accuracy_scores(overall, score_goal);
@@ -229,17 +250,21 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float aDvg = mean(temp_vec) * 1.2f;
     difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, score_goal);
     difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, score_goal);
-    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, score_goal) * jumpthrill;
-    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, score_goal) * jumpthrill;
-    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, score_goal) * sqrt(jumpthrill) * 0.996f;
+    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, score_goal);
+    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, score_goal);
+    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, score_goal);
     difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler, score_goal);
     difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, score_goal);
-    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, score_goal) * sqrt(jumpthrill);
+    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, score_goal);
+
+    difficulty.jumpstream *= jumpthrill;
+    difficulty.handstream *= jumpthrill;
+    difficulty.stamina *= sqrt(jumpthrill) * 0.996f;
+    difficulty.technical *= sqrt(jumpthrill);
 
     float highest = max(difficulty.overall, highest_difficulty(difficulty));
 
-    vector<float> temp = skillset_vector(difficulty);
-    difficulty.overall = AggregateScores(temp, 0.f, 10.24f);
+    difficulty.overall = AggregateScores(skillset_vector(difficulty), 0.f, 10.24f);
 
     if (downscale_chordjack_at_end) {
         difficulty.chordjack *= 0.9f;
@@ -249,6 +274,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     // is dependant on MSD value. It's a linear function, clamped
     // between 50% and 90%. It starts at `0 MSD -> 50%` and ends at
     // `40 MSD -> 90%`
+    // highest: 0 -> 50%, 40 -> 90%
     float minimum_required_percentage = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
     if (score_goal < minimum_required_percentage) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
@@ -446,13 +472,19 @@ float Hand::CalcMSEstimate(vector<float>& input) {
     if (input.empty())
         return 0.f;
 
+    // Sort list to be able to take the first six elements as the
+    // smallest note intervals
     sort(input.begin(), input.end());
-    float m = 0;
     input[0] *= 1.066f; //This is gross
-    size_t End = min(input.size(), static_cast<size_t>(6));
-    for (size_t i = 0; i < End; i++)
-        m += input[i];
-    return 1375.f * End / m;
+    size_t length = min(input.size(), static_cast<size_t>(6));
+    
+    // Calculate average of `input` elements up to `length`
+    float avg_interval_ms = 0; // Accumulator
+    for (size_t i = 0; i < length; i++)
+        avg_interval_ms += input[i];
+    avg_interval_ms /= length;
+    
+    return 1375.f / avg_interval_ms;
 }
 
 void Hand::InitDiff(Finger& f1, Finger& f2) {
@@ -460,12 +492,14 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
     v_itvMSdiff = vector<float>(f1.size());
 
     for (size_t i = 0; i < f1.size(); i++) {
+        // 1.6 * nps overall
         float nps = 1.6f * static_cast<float>(f1[i].size() + f2[i].size());
         float left_difficulty = CalcMSEstimate(f1[i]);
         float right_difficulty = CalcMSEstimate(f2[i]);
+        // 1.375 * nps on one hand in six smallest intervals
         float difficulty = max(left_difficulty, right_difficulty);
-        v_itvNPSdiff[i] = finalscaler * nps;
-        v_itvMSdiff[i] = finalscaler * (5.f * difficulty + 4.f * nps) / 9.f;
+        v_itvNPSdiff[i] = basescaler * nps;
+        v_itvMSdiff[i] = basescaler * (5.f * difficulty + 4.f * nps) / 9.f;
     }
     Smooth(v_itvNPSdiff, 0.f);
     if (SmoothDifficulty)
@@ -576,8 +610,10 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
         }
         bool anyzero = lcol == 0 || rcol == 0;
         output[i] = anyzero ? 1.f : CalcClamp(sqrt(1 - (static_cast<float>(min(lcol, rcol)) / static_cast<float>(max(lcol, rcol)) / 4.45f)), 0.8f, 1.05f);
-
-        fingerbias += (static_cast<float>(max(lcol, rcol)) + 2.f) / (static_cast<float>(min(lcol, rcol)) + 1.f);
+        
+        float smaller_col = static_cast<float>(min(lcol, rcol));
+        float larger_col = static_cast<float>(max(lcol, rcol));
+        fingerbias += (larger_col + 2.f) / (smaller_col + 1.f);
 
         if (logpatterns)
             std::cout << "an " << output[i] << std::endl;

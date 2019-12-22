@@ -76,7 +76,7 @@ private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
 
-    float finalscaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
+    float basescaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
                         1.025; // multiplier to standardize baselines
 
     // Stamina Model params
