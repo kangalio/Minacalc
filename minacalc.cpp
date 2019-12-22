@@ -50,7 +50,7 @@ inline float cv(const vector<float> &input) {
 
 inline float downscale_low_accuracy_scores(float f, float sg) {
     if (sg >= 0.93f) return f;
-    // This clamp is practically useless
+    // This clamp is practically useless I think
     return CalcClamp(f - sqrt(0.93f - sg), 0.f, 100.f);
 }
 
@@ -96,12 +96,11 @@ inline float AggregateScores(const vector<float>& skillsets, float rating, float
 }
 
 // Converts a row byte into the number of taps present in the row
-// e.g. 0010 -> 1 or 1011 -> 3
 unsigned int column_count(unsigned int note) {
     return note % 2 + note / 2 % 2 + note / 4 % 2 + note / 8 % 2;
 }
 
-// Proportion of how many chords of size `chord_size` exist
+// Proportion of how many taps belong to chords of size `chord_size`
 float chord_proportion(const vector<NoteInfo>& NoteInfo, const int chord_size) {
     unsigned int taps = 0;
     unsigned int chords = 0;
@@ -134,7 +133,48 @@ float highest_difficulty(const DifficultyRating& difficulty) {
     return *std::max_element(v.begin(), v.end());
 }
 
+void Calc::Init(const vector<NoteInfo>& note_info, float music_rate, float score_goal) {
+    // Number of intervals
+    numitv = static_cast<int>(std::ceil(note_info.back().rowTime / (music_rate * IntervalSpan)));
+
+    nervIntervals = vector<vector<int>>(numitv, vector<int>());
+    InitHand(left_hand, note_info, 0, 1, music_rate);
+    InitHand(right_hand, note_info, 2, 3, music_rate);
+
+    j0 = SequenceJack(note_info, 0, music_rate);
+    j1 = SequenceJack(note_info, 1, music_rate);
+    j2 = SequenceJack(note_info, 2, music_rate);
+    j3 = SequenceJack(note_info, 3, music_rate);
+    
+    // Calculate total max points
+    MaxPoints = 0;
+    for (size_t i = 0; i < left_hand.v_itvpoints.size(); i++)
+        MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
+    
+    // The base fingerbias value is calculated in Anchorscaler() which
+    // is called by InitializeHands(). That should definitely be moved
+    // to here in the future, because we don't want to have one single
+    // calculation in a thousand pieces all over the place!
+    fingerbias /= static_cast<float>(2 * nervIntervals.size());
+}
+
+void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f2, float music_rate) {
+    Finger finger1 = ProcessFinger(note_info, f1, music_rate);
+    Finger finger2 = ProcessFinger(note_info, f2, music_rate);
+    
+    hand.InitDiff(finger1, finger2);
+    hand.InitPoints(finger1, finger2);
+    
+    hand.ohjumpscale = OHJumpDownscaler(note_info, 1 << f1, 1 << f2);
+    hand.anchorscale = Anchorscaler(note_info, 1 << f1, 1 << f2);
+    hand.rollscale = RollDownscaler(finger1, finger2);
+    hand.hsscale = HSDownscaler(note_info);
+    hand.jumpscale = JumpDownscaler(note_info);
+}
+
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
+    Init(NoteInfo, music_rate, score_goal);
+    
     float last_row_time = NoteInfo.back().rowTime;
     
     // last_row_time: 30 -> 0.93; 60 -> 1.00
@@ -166,8 +206,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     // jprop + hprop: 0.625 -> 1; 0.775 -> 0.85
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
-    InitializeHands(NoteInfo, music_rate);
-    TotalMaxPoints();
     float stream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS);
     float js = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_JS);
     float hs = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_HS);
@@ -225,7 +263,6 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     else
         downscale_chordjack_at_end = true;
 
-    fingerbias /= static_cast<float>(2 * nervIntervals.size());
     // fingerbias: 2.55 -> 1; 2.7 -> 0.85
     float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
     difficulty.technical *= finger_bias_scaling;
@@ -383,34 +420,6 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     return output;
 }
 
-void Calc::InitializeHands(const vector<NoteInfo>& NoteInfo, float music_rate) {
-    // Number of intervals
-    numitv = static_cast<int>(std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
-
-    nervIntervals = vector<vector<int>>(numitv, vector<int>());
-    InitHand(left_hand, NoteInfo, 0, 1, music_rate);
-    InitHand(right_hand, NoteInfo, 2, 3, music_rate);
-
-    j0 = SequenceJack(NoteInfo, 0, music_rate);
-    j1 = SequenceJack(NoteInfo, 1, music_rate);
-    j2 = SequenceJack(NoteInfo, 2, music_rate);
-    j3 = SequenceJack(NoteInfo, 3, music_rate);
-}
-
-void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f2, float music_rate) {
-    Finger finger1 = ProcessFinger(note_info, f1, music_rate);
-    Finger finger2 = ProcessFinger(note_info, f2, music_rate);
-    
-    hand.InitDiff(finger1, finger2);
-    hand.InitPoints(finger1, finger2);
-    
-    hand.ohjumpscale = OHJumpDownscaler(note_info, 1 << f1, 1 << f2);
-    hand.anchorscale = Anchorscaler(note_info, 1 << f1, 1 << f2);
-    hand.rollscale = RollDownscaler(finger1, finger2);
-    hand.hsscale = HSDownscaler(note_info);
-    hand.jumpscale = JumpDownscaler(note_info);
-}
-
 Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     int interval_i = 0;
     float last = -5.f;
@@ -438,28 +447,23 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     return all_intervals;
 }
 
-void Calc::TotalMaxPoints() {
-    for (size_t i = 0; i < left_hand.v_itvpoints.size(); i++)
-        MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
-}
-
 float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
-    float gotpoints;
+    float achieved_points;
     if (flags & CHISEL_JACK) {
         // Max achievable points, minus the points the player's losing
         // from jack patterns
-        gotpoints = MaxPoints
+        achieved_points = MaxPoints
                 - JackLoss(j0, player_skill)
                 - JackLoss(j1, player_skill)
                 - JackLoss(j2, player_skill)
                 - JackLoss(j3, player_skill);
     } else {
         // Expected achieved points by left and right hand summed up
-        gotpoints = left_hand.CalcInternal(player_skill, flags);
-        gotpoints += right_hand.CalcInternal(player_skill, flags);
+        achieved_points = left_hand.CalcInternal(player_skill, flags);
+        achieved_points += right_hand.CalcInternal(player_skill, flags);
     }
     
-    return gotpoints / MaxPoints;
+    return achieved_points / MaxPoints;
 }
 
 // Approximate player skill required to achieve `score_goal`. The

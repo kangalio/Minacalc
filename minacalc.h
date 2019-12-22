@@ -107,12 +107,12 @@ public:
     // Number of intervals
     int numitv;
 
+    void Init(const std::vector<NoteInfo>& note_info, float music_rate, float score_goal);
+
     /* Splits up the chart by each hand and calls ProcessFinger on each "track"
     before passing
     the results to the hand initialization functions. Also passes the input
     timingscale value. */
-    void InitializeHands(const std::vector<NoteInfo>& NoteInfo, float music_rate);
-
     void InitHand(Hand& hand, const std::vector<NoteInfo>& note_info, int f1, int f2, float music_rate);
 
     /* Slices the track into predefined intervals of time. All taps within each
