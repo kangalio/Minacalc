@@ -137,7 +137,20 @@ void Calc::Init(const vector<NoteInfo>& note_info, float music_rate, float score
     // Number of intervals
     numitv = static_cast<int>(std::ceil(note_info.back().rowTime / (music_rate * IntervalSpan)));
 
+    // Calculate nervIntervals
     nervIntervals = vector<vector<int>>(numitv, vector<int>());
+    int interval_i = 0;
+    for (size_t i = 0; i < note_info.size(); i++) {
+        float scaledtime = note_info[i].rowTime / music_rate;
+
+        while (scaledtime > static_cast<float>(interval_i + 1) * IntervalSpan)
+            ++interval_i;
+
+        if (note_info[i].notes != 0) {
+            nervIntervals[interval_i].push_back(i);
+        }
+    }
+    
     InitHand(left_hand, note_info, 0, 1, music_rate);
     InitHand(right_hand, note_info, 2, 3, music_rate);
 
@@ -154,7 +167,7 @@ void Calc::Init(const vector<NoteInfo>& note_info, float music_rate, float score
     // The base fingerbias value is calculated in Anchorscaler() which
     // is called by InitializeHands(). That should definitely be moved
     // to here in the future, because we don't want to have one single
-    // calculation in a thousand pieces all over the place!
+    // calculation split across several functions
     fingerbias /= static_cast<float>(2 * nervIntervals.size());
 }
 
@@ -174,7 +187,7 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
     Init(NoteInfo, music_rate, score_goal);
-    DifficultyRating difficulty;
+    DifficultyRating difficulty {0, 0, 0, 0, 0, 0, 0, 0};
     
     float last_row_time = NoteInfo.back().rowTime;
     
@@ -344,8 +357,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
 
 // ugly jack stuff
 // Parameter j = JackSeq
-// Parameter skill = player skill
-float Calc::JackLoss(const vector<float>& j, float skill) {
+float Calc::JackLoss(const vector<float>& jackseq, float skill) {
     const float base_ceiling = 1.15f; // Jack multiplier max
     const float fscale = 1750.f; // How fast ceiling rises
     const float prop = 0.75f; // Proportion of player difficulty at which jack tax begins
@@ -354,13 +366,14 @@ float Calc::JackLoss(const vector<float>& j, float skill) {
     float ceiling = 1.f;
     float mod = 1.f;
     
-    for (float jd : j) { // Iterate interval's jack difficulties
+    for (float jd : jackseq) { // Iterate interval's jack difficulties
         // If
         // Decrease if jack difficulty is over 133% of player skill
         mod += ((jd/(prop*skill)) - 1) / mag;
         
-        if (mod > 1.f)
+        if (mod > 1.f) {
             ceiling += (mod - 1) / fscale;
+        }
         
         mod = CalcClamp(mod, 1.f, base_ceiling * sqrt(ceiling));
         
@@ -419,7 +432,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
             // ~17.857 NPS, I think
             jack_difficulty = min(jack_difficulty, 50.f);
             
-            output.emplace_back(jack_difficulty);
+            output.push_back(jack_difficulty);
         }
     }
     return output;
@@ -439,15 +452,9 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
 
         if (NoteInfo[i].notes & column) {
             float interval_ms = 1000 * (scaledtime - last);
-            all_intervals[interval_i].emplace_back(CalcClamp(interval_ms, 40.f, 5000.f));
+            all_intervals[interval_i].push_back(CalcClamp(interval_ms, 40.f, 5000.f));
             last = scaledtime;
         }
-
-        // This is only executed on the first call of this function.
-        // It's hacky, and should be moved out of here, because it's not
-        // part of the finger calculation process.
-        if (t == 0 && NoteInfo[i].notes != 0)
-            nervIntervals[interval_i].emplace_back(i);
     }
     
     return all_intervals;
@@ -525,8 +532,10 @@ void Hand::InitDiff(Finger& f1, Finger& f2) {
 // Fills in the v_itvpoints vector which holds the max number of points
 // for each interval
 void Hand::InitPoints(const Finger& f1, const Finger& f2) {
-    for (size_t i = 0; i < f1.size(); i++)
-        v_itvpoints.emplace_back(static_cast<int>(f1[i].size()) + static_cast<int>(f2[i].size()));
+    for (size_t i = 0; i < f1.size(); i++) {
+        size_t max_interval_points = f1[i].size() + f2[i].size();
+        v_itvpoints.push_back(static_cast<int>(max_interval_points));
+    }
 }
 
 void Hand::StamAdjust(float x, vector<float>& diff) {
@@ -744,9 +753,9 @@ vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
         }
         vector<float> hand_intervals;
         for (float time1 : f1[i])
-            hand_intervals.emplace_back(time1);
+            hand_intervals.push_back(time1);
         for (float time2 : f2[i])
-            hand_intervals.emplace_back(time2);
+            hand_intervals.push_back(time2);
 
         float interval_mean = mean(hand_intervals);
 
@@ -784,11 +793,11 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
 
     if (!NoteInfo.empty())
         for (int i = lower_rate; i < upper_rate; i++)
-            allrates.emplace_back(MinaSDCalc(NoteInfo, static_cast<float>(i) / 10.f, 0.93f));
+            allrates.push_back(MinaSDCalc(NoteInfo, static_cast<float>(i) / 10.f, 0.93f));
     else {
         DifficultyRating output{0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
         for (int i = lower_rate; i < upper_rate; i++)
-            allrates.emplace_back(output);
+            allrates.push_back(output);
     }
     return allrates;
 }
