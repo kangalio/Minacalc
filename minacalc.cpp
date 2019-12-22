@@ -215,23 +215,27 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float techbase = max(stream, jack);
     tech *= CalcClamp(tech / techbase, 0.85f, 1.f);
 
+    // Derive stamina rating from either stream, js, hs or tech,
+    // depending on which is the highest.
     float stam;
-    if (stream > tech || js > tech || hs > tech)
-        if (stream > js && stream > hs)
-            stam = Chisel(stream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS);
-        else if (js > hs)
-            stam = Chisel(js - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_JS);
-        else
-            stam = Chisel(hs - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_HS);
-    else
+    float max_stream_js_hs_tech = max(max(stream, js), max(hs, tech));
+    if (max_stream_js_hs_tech == stream) {
+        stam = Chisel(stream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS);
+    } else if (max_stream_js_hs_tech == js) {
+        stam = Chisel(js - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_JS);
+    } else if (max_stream_js_hs_tech == hs) {
+        stam = Chisel(hs - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_HS);
+    } else { // tech is highest
         stam = Chisel(tech - 0.1f, 2.56f, score_goal, CHISEL_STAM);
+    }
 
     js *= 0.95f;
     hs *= 0.95f;
     stam *= 0.9f;
     tech *= 0.95f;
 
-    float chordjack = jack * 0.75f;
+    // First candidate for chordjack rating
+    float chordjack1 = jack * 0.75f;
 
     DifficultyRating difficulty = DifficultyRating {
             0.0, // Overall rating is not set at this point
@@ -240,11 +244,15 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
             downscale_low_accuracy_scores(hs, score_goal),
             downscale_low_accuracy_scores(stam, score_goal),
             downscale_low_accuracy_scores(jack, score_goal),
-            downscale_low_accuracy_scores(chordjack, score_goal),
+            downscale_low_accuracy_scores(chordjack1, score_goal),
             downscale_low_accuracy_scores(tech, score_goal)};
     
-    chordjack = difficulty.handstream;
+    // Second candidate for chordjack rating that's not based
+    // on jack, but on jumps, hands and quads
+    float chordjack2 = difficulty.handstream;
+    chordjack2 *= CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
     
+    // Bunch of scaling
     difficulty.stream *= allhandsdownscaler * manyjumpsdownscaler * lotquaddownscaler;
     difficulty.jumpstream *= nojumpsdownscaler * allhandsdownscaler * lotquaddownscaler;
     difficulty.handstream *= nohandsdownscaler * allhandsdownscaler * 1.015f * manyjumpsdownscaler * lotquaddownscaler;
@@ -255,37 +263,38 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float max_stream_jack_hs_js = max(max(difficulty.stream, difficulty.jack), max(difficulty.jumpstream, difficulty.handstream));
     difficulty.stamina = CalcClamp(difficulty.stamina, 1.f, max_stream_jack_hs_js * 1.1f);
 
-    chordjack *= CalcClamp(qprop + hprop + jprop + 0.2f, 0.5f, 1.f) * 1.025f;
-
+    // Decide whether to replace the jack-derived chordjack rating with
+    // the handstream-derived one
     bool downscale_chordjack_at_end = false;
-    if (chordjack > difficulty.jack)
-        difficulty.chordjack = chordjack;
+    if (chordjack2 > difficulty.jack)
+        difficulty.chordjack = chordjack2;
     else
+        // difficulty.chordjack is left at the jack-derived value
         downscale_chordjack_at_end = true;
 
     // fingerbias: 2.55 -> 1; 2.7 -> 0.85
     float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
     difficulty.technical *= finger_bias_scaling;
-
+    
     if (finger_bias_scaling <= 0.95f) {
+        // Buff jack
         difficulty.jack *= 1.f + (1.f - sqrt(finger_bias_scaling));
     }
     
     // If HS or JS are more prominent than stream, downscale stream a
     // little to prevent too much stream rating as a side effect from
     // JS/HS.
-    // Stream is nerfed by `sqrt(hs - stream)` or `sqrt(js - stream)`
     float max_js_hs = max(difficulty.handstream, difficulty.jumpstream);
     if (difficulty.stream < max_js_hs)
         difficulty.stream -= sqrt(max_js_hs - difficulty.stream);
 
     // Set first overall rating
-    vector<float> temp_vec = skillset_vector(difficulty);
-    float overall = AggregateScores(temp_vec, 0.f, 10.24f);
+    float overall = AggregateScores(skillset_vector(difficulty), 0.f, 10.24f);
     difficulty.overall = downscale_low_accuracy_scores(overall, score_goal);
 
-    temp_vec = skillset_vector(difficulty);
-    float aDvg = mean(temp_vec) * 1.2f;
+    // Cap all skillsets at 120% of the average, except stream/js/
+    // technical, those are capped at 125%
+    float aDvg = mean(skillset_vector(difficulty)) * 1.2f;
     difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, score_goal);
     difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, score_goal);
     difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, score_goal);
@@ -295,6 +304,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, score_goal);
     difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, score_goal);
 
+    // Some more scaling
     difficulty.jumpstream *= jumpthrill;
     difficulty.handstream *= jumpthrill;
     difficulty.stamina *= sqrt(jumpthrill) * 0.996f;
@@ -308,19 +318,16 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         difficulty.chordjack *= 0.9f;
     }
 
-    // Calculate and check minimum required percentage. This percentage
-    // is dependant on MSD value. It's a linear function, clamped
-    // between 50% and 90%. It starts at `0 MSD -> 50%` and ends at
-    // `40 MSD -> 90%`
+    // Calculate and check minimum required percentage.
     // highest: 0 -> 50%, 40 -> 90%
     float minimum_required_percentage = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
     if (score_goal < minimum_required_percentage) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     }
 
-    // If technical is supposedly the highest skillset, but JS or HS are
+    // If technical is rated the highest skillset, but JS or HS are
     // near to it, technical might be falsely rated too high. In that
-    // case downscale
+    // case, downscale
     if (highest == difficulty.technical) {
         auto hs = difficulty.handstream;
         auto js = difficulty.jumpstream;
@@ -548,6 +555,9 @@ void Hand::StamAdjust(float x, vector<float>& diff) {
     }
 }
 
+// Calculates the number of points a player with `player_skill` will be
+// expected to achieve. The calculation can be influenced through the
+// `flags`
 float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
     vector<float> diff = (flags & CHISEL_NPS) ? v_itvNPSdiff : v_itvMSdiff;
     
@@ -568,8 +578,9 @@ float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
     if (flags & CHISEL_STAM)
         StamAdjust(player_skill, diff);
     
-    // Now, calculate the number of points the player will be expected
-    // to achieve, using the individual interval's difficulties.
+    // Until now, that was the setup code, where we calculated each
+    // individual interval's difficulty. Now, we are going to calculate
+    // the number of expected achieved points out of those difficulties.
     
     float total_achievable_points = 0.f;
     for (size_t i = 0; i < diff.size(); i++) {
