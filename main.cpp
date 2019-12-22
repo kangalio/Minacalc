@@ -51,12 +51,9 @@ int main(int argc, char *argv[]) {
         rating = difficultyFromFile(argv[1]);
     else
         rating = difficultyFromFile("../chart.sm");
-    //~ for (auto& diff : rating) {
-        //~ printDifficulty(diff);
-        //~ cout << endl << endl;
-    //~ }
-    cout << endl;
-    cout << "Result: " << rating[rating.size() - 1].overall << endl;
-    cout << "Should be: 17.7187" << endl;
+    for (auto& diff : rating) {
+        printDifficulty(diff);
+        cout << endl << endl;
+    }
     return 0;
 }
