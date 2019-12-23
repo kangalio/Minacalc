@@ -184,12 +184,28 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
     hand.jumpscale = JumpDownscaler(note_info);
 }
 
-//~ float scale(value, startx, starty, endx, endy) {
-    //~ if (value <= startx || value >= endx)
-        //~ return value;
+/*
+This utility function maps a value from x in the following diagram to y.
+The mapping is defined using the four parameters:
+
+        end_x
+           |
+           v
+  end_y -> _________
+          /
+         /
+ _______/ <- start_y
+        ^
+        |
+     start_x
+*/
+float transform(float value, float start_x, float start_y, float end_x, float end_y) {
+    if (value <= start_x) return start_y;
+    if (value >= end_x) return end_y;
     
-    
-//~ }
+    float proportion_across = (value - start_x) / (end_x - start_x);
+    return start_y + proportion_across * (end_y - start_y);
+}
 
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
     Init(NoteInfo, music_rate, score_goal);
@@ -197,36 +213,23 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     
     float last_row_time = NoteInfo.back().rowTime;
     
-    // In the following comments I'm using a notation to describe 
+    float grindscaler = transform(last_row_time, 30, 0.93, 60, 1);
+    grindscaler *= transform(last_row_time, 14.653846, 0.87, 29.653846, 1);
     
-    // last_row_time: 30 -> 0.93; 60 -> 1.00
-    float grindscaler = 0.93f + 0.07f * CalcClamp(last_row_time / 30.f - 1.f, 0.f, 1.f);
-    // last_row_time: 9.8 -> 0.87; 234.8 -> 1.00
-    grindscaler *= CalcClamp(0.873f + (0.13f * (last_row_time / 15.f - 1.f)), 0.87f, 1.f);
+    float shortstamdownscaler = transform(last_row_time, 150, 0.9, 300, 1);
     
-    // last_row_time: 150 -> 0.9; 300 -> 1.0
-    float shortstamdownscaler = CalcClamp(0.9f + (0.1f * (last_row_time - 150.f) / 150.f), 0.9f, 1.f);
-
     float jprop = chord_proportion(NoteInfo, 2);
-    // jprop: -0.5 -> 0.8; 0.5 -> 1
-    // jprop: 0 -> 0.9; 0.5 -> 1
-    float nojumpsdownscaler = CalcClamp(0.8f + (0.2f * (jprop + 0.5f)), 0.8f, 1.f);
-    // jprop: 0.43 -> 1; 0.85 -> 0.85
-    float manyjumpsdownscaler = CalcClamp(1.43f - jprop, 0.85f, 1.f);
+    float nojumpsdownscaler = transform(jprop, 0, 0.9, 0.5, 1);
+    float manyjumpsdownscaler = transform(jprop, 0.43, 1, 0.58, 0.85);
 
     float hprop = chord_proportion(NoteInfo, 3);
-    // hprop: -0.75 -> 0.8; 0.25 -> 1
-    // hprop: 0 -> 0.95; 0.25 -> 1
-    float nohandsdownscaler = CalcClamp(0.8f + (0.2f * (hprop + 0.75f)), 0.8f, 1.f);
-    // hprop: 0.23 -> 1; 0.38 -> 0.85
-    float allhandsdownscaler = CalcClamp(1.23f - hprop, 0.85f, 1.f);
+    float nohandsdownscaler = transform(hprop, 0, 0.95, 0.25, 1);
+    float allhandsdownscaler = transform(hprop, 0.23, 1, 0.38, 0.85);
 
     float qprop = chord_proportion(NoteInfo, 4);
-    // qprop: 0.13 -> 1; 0.28 -> 0.85
-    float lotquaddownscaler = CalcClamp(1.13f - qprop, 0.85f, 1.f);
+    float lotquaddownscaler = transform(qprop, 0.13, 1, 0.28, 0.85);
 
-    // jprop + hprop: 0.625 -> 1; 0.775 -> 0.85
-    float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
+    float jumpthrill = transform(jprop + hprop, 0.625, 1, 0.775, 0.85);
 
     difficulty.stream = Chisel(0.1f, 10.24f, score_goal, STREAM, false);
     difficulty.jumpstream = Chisel(0.1f, 10.24f, score_goal, JS, false);
@@ -291,8 +294,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         // difficulty.chordjack is left at the jack-derived value
         downscale_chordjack_at_end = true;
 
-    // fingerbias: 2.55 -> 1; 2.7 -> 0.85
-    float finger_bias_scaling = CalcClamp(3.55f - fingerbias, 0.85f, 1.f);
+    float finger_bias_scaling = transform(fingerbias, 2.55, 1, 2.7, 0.85);
     difficulty.technical *= finger_bias_scaling;
     
     if (finger_bias_scaling <= 0.95f) {
@@ -338,8 +340,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     }
 
     // Calculate and check minimum required percentage.
-    // highest: 0 -> 50%, 40 -> 90%
-    float minimum_required_percentage = CalcClamp(0.5f + (highest / 100.f), 0.f, 0.9f);
+    float minimum_required_percentage = transform(highest, 0, 0.5, 40, 0.9);
     if (score_goal < minimum_required_percentage) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     }
