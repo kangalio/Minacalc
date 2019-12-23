@@ -220,11 +220,11 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     // jprop + hprop: 0.625 -> 1; 0.775 -> 0.85
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
-    difficulty.stream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS);
-    difficulty.jumpstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_JS | CHISEL_NPS);
-    difficulty.handstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_HS | CHISEL_NPS);
-    difficulty.technical = Chisel(0.1f, 10.24f, score_goal, 0);
-    difficulty.jack = Chisel(0.1f, 10.24f, score_goal, CHISEL_JACK | CHISEL_NPS);
+    difficulty.stream = Chisel(0.1f, 10.24f, score_goal, STREAM, false);
+    difficulty.jumpstream = Chisel(0.1f, 10.24f, score_goal, JS, false);
+    difficulty.handstream = Chisel(0.1f, 10.24f, score_goal, HS, false);
+    difficulty.technical = Chisel(0.1f, 10.24f, score_goal, TECH, false);
+    difficulty.jack = Chisel(0.1f, 10.24f, score_goal, JACK, false);
 
     float techbase = max(difficulty.stream, difficulty.jack);
     difficulty.technical *= CalcClamp(difficulty.technical / techbase, 0.85f, 1.f);
@@ -233,13 +233,13 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     // depending on which is the highest.
     float max_stream_js_hs_tech = max(max(difficulty.stream, difficulty.jumpstream), max(difficulty.handstream, difficulty.technical));
     if (max_stream_js_hs_tech == difficulty.stream) {
-        difficulty.stamina = Chisel(difficulty.stream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS);
+        difficulty.stamina = Chisel(difficulty.stream - 0.1f, 2.56f, score_goal, STREAM, true);
     } else if (max_stream_js_hs_tech == difficulty.jumpstream) {
-        difficulty.stamina = Chisel(difficulty.jumpstream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_JS);
+        difficulty.stamina = Chisel(difficulty.jumpstream - 0.1f, 2.56f, score_goal, JS, true);
     } else if (max_stream_js_hs_tech == difficulty.handstream) {
-        difficulty.stamina = Chisel(difficulty.handstream - 0.1f, 2.56f, score_goal, CHISEL_STAM | CHISEL_NPS | CHISEL_HS);
+        difficulty.stamina = Chisel(difficulty.handstream - 0.1f, 2.56f, score_goal, HS, true);
     } else { // tech is highest
-        difficulty.stamina = Chisel(difficulty.technical - 0.1f, 2.56f, score_goal, CHISEL_STAM);
+        difficulty.stamina = Chisel(difficulty.technical - 0.1f, 2.56f, score_goal, TECH, true);
     }
 
     difficulty.jumpstream *= 0.95f;
@@ -460,9 +460,9 @@ Finger Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
     return all_intervals;
 }
 
-float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
+float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselType type, bool stam) {
     float achieved_points;
-    if (flags & CHISEL_JACK) {
+    if (type == JACK) {
         // Max achievable points, minus the points the player's losing
         // from jack patterns
         achieved_points = MaxPoints
@@ -472,8 +472,8 @@ float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
                 - JackLoss(j3, player_skill);
     } else {
         // Expected achieved points by left and right hand summed up
-        achieved_points = left_hand.CalcInternal(player_skill, flags);
-        achieved_points += right_hand.CalcInternal(player_skill, flags);
+        achieved_points = left_hand.CalcInternal(player_skill, type, stam);
+        achieved_points += right_hand.CalcInternal(player_skill, type, stam);
     }
     
     return achieved_points / MaxPoints;
@@ -481,9 +481,9 @@ float Calc::CalcScoreForPlayerSkill(float player_skill, ChiselFlags flags) {
 
 // Approximate player skill required to achieve `score_goal`. The
 // approximation can be influenced via the `flags`.
-float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselFlags flags) {
-    auto check_if_too_low = [this, flags, score_goal](float player_skill) {
-        float score = CalcScoreForPlayerSkill(player_skill, flags);
+float Calc::Chisel(float player_skill, float resolution, float score_goal, ChiselType type, bool stam) {
+    auto check_if_too_low = [this, score_goal, type, stam](float player_skill) {
+        float score = CalcScoreForPlayerSkill(player_skill, type, stam);
         return score < score_goal;
     };
     return approximate(player_skill, resolution, 7, check_if_too_low, true);
@@ -566,24 +566,24 @@ void Hand::StamAdjust(float skill, vector<float>& diff) {
 // Calculates the number of points a player with `player_skill` will be
 // expected to achieve. The calculation can be influenced through the
 // `flags`
-float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
-    vector<float> diff = (flags & CHISEL_NPS) ? v_itvNPSdiff : v_itvMSdiff;
+float Hand::CalcInternal(float player_skill, ChiselType type, bool stam) {
+    vector<float> diff = (type == TECH) ? v_itvMSdiff : v_itvNPSdiff;
     
     for (size_t i = 0; i < diff.size(); ++i) {
         diff[i] *= anchorscale[i] * rollscale[i];
         
-        if (flags & CHISEL_HS) { // Handstream
+        if (type == HS) {
             diff[i] *= sqrt(ohjumpscale[i]) * jumpscale[i];
-        } else if (flags & CHISEL_JS) { // Jumpstream
+        } else if (type == JS) {
             diff[i] *= sqrt(ohjumpscale[i]) * hsscale[i] * hsscale[i] * jumpscale[i];
-        } else if (flags & CHISEL_NPS) { // Stream
+        } else if (type == STREAM) {
             diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * ohjumpscale[i] * ohjumpscale[i] * jumpscale[i] * jumpscale[i];
-        } else { // Tech
+        } else if (type == TECH) {
             diff[i] *= sqrt(ohjumpscale[i]);
         }
     }
     
-    if (flags & CHISEL_STAM)
+    if (stam)
         StamAdjust(player_skill, diff);
     
     // Until now, that was the setup code, where we calculated each
