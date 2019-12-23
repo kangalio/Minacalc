@@ -134,7 +134,6 @@ float highest_difficulty(const DifficultyRating& difficulty) {
 }
 
 void Calc::Init(const vector<NoteInfo>& note_info, float music_rate, float score_goal) {
-    // Number of intervals
     numitv = static_cast<int>(std::ceil(note_info.back().rowTime / (music_rate * IntervalSpan)));
 
     // Calculate nervIntervals
@@ -185,11 +184,20 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
     hand.jumpscale = JumpDownscaler(note_info);
 }
 
+//~ float scale(value, startx, starty, endx, endy) {
+    //~ if (value <= startx || value >= endx)
+        //~ return value;
+    
+    
+//~ }
+
 DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_rate, float score_goal) {
     Init(NoteInfo, music_rate, score_goal);
     DifficultyRating difficulty {0, 0, 0, 0, 0, 0, 0, 0};
     
     float last_row_time = NoteInfo.back().rowTime;
+    
+    // In the following comments I'm using a notation to describe 
     
     // last_row_time: 30 -> 0.93; 60 -> 1.00
     float grindscaler = 0.93f + 0.07f * CalcClamp(last_row_time / 30.f - 1.f, 0.f, 1.f);
@@ -572,12 +580,12 @@ float Hand::CalcInternal(float player_skill, ChiselType type, bool stam) {
     for (size_t i = 0; i < diff.size(); ++i) {
         diff[i] *= anchorscale[i] * rollscale[i];
         
-        if (type == HS) {
-            diff[i] *= sqrt(ohjumpscale[i]) * jumpscale[i];
+        if (type == STREAM) {
+            diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * ohjumpscale[i] * ohjumpscale[i] * jumpscale[i] * jumpscale[i];
         } else if (type == JS) {
             diff[i] *= sqrt(ohjumpscale[i]) * hsscale[i] * hsscale[i] * jumpscale[i];
-        } else if (type == STREAM) {
-            diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * ohjumpscale[i] * ohjumpscale[i] * jumpscale[i] * jumpscale[i];
+        } else if (type == HS) {
+            diff[i] *= sqrt(ohjumpscale[i]) * jumpscale[i];
         } else if (type == TECH) {
             diff[i] *= sqrt(ohjumpscale[i]);
         }
@@ -630,7 +638,9 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
         if (taps == 0) {
             output.push_back(1);
         } else {
+            // This can be max 1/4
             float jump_proportion = static_cast<float>(jumps) / static_cast<float>(taps);
+            // Therefore this'll be max ~0.880
             output.push_back(pow(1 - (1.6f * jump_proportion), 0.25f));
         }
 
@@ -703,6 +713,7 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
             // Note that this can't ever be over 1/3
             float hand_proportion = static_cast<float>(hands) / static_cast<float>(taps);
             // Therefore this downscaling value can't ever be below ~0.903
+            // A 3-1-2-1 pattern would result in ~0.962
             output[i] = sqrt(sqrt(1 - hand_proportion));
         }
 
@@ -745,7 +756,6 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
         Smooth(output, 1.f);
     return output;
 }
-
 
 vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
     vector<float> output(f1.size());    //this is slightly problematic because if one finger is longer than the other
