@@ -221,10 +221,10 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     float jumpthrill = CalcClamp(1.625f - jprop - hprop, 0.85f, 1.f);
 
     difficulty.stream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS);
-    difficulty.jumpstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_JS);
-    difficulty.handstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_HS);
+    difficulty.jumpstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_JS | CHISEL_NPS);
+    difficulty.handstream = Chisel(0.1f, 10.24f, score_goal, CHISEL_HS | CHISEL_NPS);
     difficulty.technical = Chisel(0.1f, 10.24f, score_goal, 0);
-    difficulty.jack = Chisel(0.1f, 10.24f, score_goal, CHISEL_NPS | CHISEL_JACK);
+    difficulty.jack = Chisel(0.1f, 10.24f, score_goal, CHISEL_JACK | CHISEL_NPS);
 
     float techbase = max(difficulty.stream, difficulty.jack);
     difficulty.technical *= CalcClamp(difficulty.technical / techbase, 0.85f, 1.f);
@@ -538,7 +538,7 @@ void Hand::InitPoints(const Finger& f1, const Finger& f2) {
     }
 }
 
-void Hand::StamAdjust(float x, vector<float>& diff) {
+void Hand::StamAdjust(float skill, vector<float>& diff) {
     float floor = 1.f;          // stamina multiplier min (increases as chart advances)
     float mod = 1.f;            // multiplier
     float last_diff = 0.f;
@@ -549,7 +549,7 @@ void Hand::StamAdjust(float x, vector<float>& diff) {
         last_diff = i;
         
         // Higher number -> harder to sustain this difficulty for player
-        float tax = diff_avg / (prop*x);
+        float tax = diff_avg / (prop * skill);
         mod += (tax - 1) / mag;
         
         // If this section is particularly difficult, deplete stamina
@@ -572,13 +572,13 @@ float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
     for (size_t i = 0; i < diff.size(); ++i) {
         diff[i] *= anchorscale[i] * rollscale[i];
         
-        if (flags & CHISEL_HS) {
+        if (flags & CHISEL_HS) { // Handstream
             diff[i] *= sqrt(ohjumpscale[i]) * jumpscale[i];
-        } else if (flags & CHISEL_JS) {
-            diff[i] *= hsscale[i] * hsscale[i] * sqrt(ohjumpscale[i]) * jumpscale[i];
-        } else if (flags & CHISEL_NPS) {
+        } else if (flags & CHISEL_JS) { // Jumpstream
+            diff[i] *= sqrt(ohjumpscale[i]) * hsscale[i] * hsscale[i] * jumpscale[i];
+        } else if (flags & CHISEL_NPS) { // Stream
             diff[i] *= hsscale[i] * hsscale[i] * hsscale[i] * ohjumpscale[i] * ohjumpscale[i] * jumpscale[i] * jumpscale[i];
-        } else {
+        } else { // Tech
             diff[i] *= sqrt(ohjumpscale[i]);
         }
     }
@@ -590,19 +590,21 @@ float Hand::CalcInternal(float player_skill, ChiselFlags flags) {
     // individual interval's difficulty. Now, we are going to calculate
     // the number of expected achieved points out of those difficulties.
     
-    float total_achievable_points = 0.f;
+    float total_achieved_points = 0.f;
     for (size_t i = 0; i < diff.size(); i++) {
-        float achievable_points = v_itvpoints[i];
+        // Start with the assumption that the player will achieve the
+        // max number of points
+        float achieved_points = v_itvpoints[i];
         
         // If player skill below required skill for this interval
         if (player_skill <= diff[i]) {
             // Decrease the number of points the player will achieve
-            achievable_points *= pow(player_skill / diff[i], 1.8f);
+            achieved_points *= pow(player_skill / diff[i], 1.8f);
         }
         
-        total_achievable_points += achievable_points;
+        total_achieved_points += achieved_points;
     }
-    return total_achievable_points;
+    return total_achieved_points;
 }
 
 vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
@@ -629,7 +631,6 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
             output.push_back(1);
         } else {
             float jump_proportion = static_cast<float>(jumps) / static_cast<float>(taps);
-            // When 62.5% of taps are jumps, the downscaler will reach 0
             output.push_back(pow(1 - (1.6f * jump_proportion), 0.25f));
         }
 
@@ -682,6 +683,8 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
     return output;
 }
 
+// Downscale if there's many hands. Max downscale value is ~0.903 if the
+// chart is 100% hands
 vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
@@ -712,6 +715,8 @@ vector<float> Calc::HSDownscaler(const vector<NoteInfo>& NoteInfo) {
     return output;
 }
 
+// Downscale if there's many jumps, max downscaling is ~0.955 if the
+// chart is 100% jumps
 vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
     vector<float> output(nervIntervals.size());
 
