@@ -19,11 +19,9 @@ typedef std::vector<float> JackSeq; // Vector of a local jack speed difficulty f
 
 enum ChiselType { STREAM, JS, HS, TECH, JACK };
 
-/*
- * The comments in here contain the concept of 'points'. That's
- * referring to Wifescore points, but scaled to a max of 1 (instead of
- * 2 as usually)
- */
+// The comments in here contain the concept of 'points'. That's
+// referring to Wifescore points, but scaled to a max of 1 (instead of
+// 2 as usually)
 
 /* The difficulties of each hand tend to be independent from one another. This
 is not absolute, as in the case of polyrhythm trilling. However the goal of the
@@ -66,21 +64,20 @@ public:
 
     float fingerbias;
     std::vector<float> ohjumpscale, rollscale, hsscale, jumpscale, anchorscale;
-    std::vector<int> v_itvpoints;   // Max points for each interval
-    std::vector<float> v_itvNPSdiff, v_itvMSdiff;  // Calculated difficulty for each interval
+    std::vector<int> v_itvpoints; // Max points for each interval
+    std::vector<float> v_itvNPSdiff, v_itvMSdiff; // Calculated difficulty for each interval
 private:
-    const bool SmoothDifficulty =
-            true; // Do we moving average the difficulty intervals?
+    // Do we moving average the difficulty intervals?
+    const bool SmoothDifficulty = true;
     
     float basescaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
                         1.025; // multiplier to standardize baselines
 
     // Stamina Model params
-    const float ceil = 1.08f;   // stamina multiplier max
-    const float mag = 355.f;     // multiplier generation scaler
+    const float ceil = 1.08f; // stamina multiplier max
+    const float mag = 355.f; // multiplier generation scaler
     const float fscale = 2000.f; // how fast the floor rises (it's lava)
-    const float prop =
-            0.75f; // proportion of player difficulty at which stamina tax begins
+    const float prop = 0.75f; // proportion of player difficulty at which stamina tax begins
 };
 
 class Calc
@@ -120,9 +117,7 @@ public:
     in the track). */
     Finger ProcessFinger(const std::vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate);
 
-    // Derivative calc params
     float MaxPoints = 0.f; // Total points achievable in the file
-    void TotalMaxPoints(); // Counts up the total points and assigns it
 
     /* Returns estimate of player skill needed to achieve score goal on chart.
      * The player_skill parameter gives an initial guess and floor for player skill.
@@ -151,14 +146,13 @@ public:
     Hand right_hand;
 
 private:
+    float fingerbias;
     std::vector<std::vector<int>> nervIntervals;
 
     // Const calc params
-    const bool SmoothPatterns =
-            true; // Do we moving average the pattern modifier intervals?
+    const bool SmoothPatterns = true; // Do we moving average the pattern modifier intervals?
     const float IntervalSpan = 0.5f; // Intervals of time we slice the chart at
     const bool logpatterns = false;
-    float fingerbias = 1.f;
 
     JackSeq j0;
     JackSeq j1;

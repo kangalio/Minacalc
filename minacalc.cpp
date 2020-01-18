@@ -17,7 +17,7 @@ using std::pow;
 
 template<typename T>
 T CalcClamp(T x, T l, T h) {
-return x > h ? h : (x < l ? l : x);
+    return x > h ? h : (x < l ? l : x);
 }
 
 template <typename F>
@@ -185,21 +185,10 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
     hand.fingerbias = CalculateFingerbias(note_info, 1 << f1, 1 << f2);
 }
 
-/*
-This utility function maps a value from x in the following diagram to y.
-The mapping is defined using the four parameters:
-
-        end_x
-           |
-           v
-  end_y -> _________
-          /
-         /
- _______/ <- start_y
-        ^
-        |
-     start_x
-*/
+// Linear interpolation, for example:
+// `float shortstamdownscaler = transform(last_row_time, 150, 0.9, 300, 1);`
+// will downscale to 90% at 150 seconds and below, and it will stop
+// downscaling (i.e. downscale to 100%) at 300 seconds.
 float transform(float value, float start_x, float start_y, float end_x, float end_y) {
     if (value <= start_x) return start_y;
     if (value >= end_x) return end_y;
@@ -304,8 +293,8 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     }
     
     // If HS or JS are more prominent than stream, downscale stream a
-    // little to prevent too much stream rating as a side effect from
-    // JS/HS.
+    // little. Maybe to prevent too much stream rating as a side effect
+    // from JS/HS?
     float max_js_hs = max(difficulty.handstream, difficulty.jumpstream);
     if (difficulty.stream < max_js_hs)
         difficulty.stream -= sqrt(max_js_hs - difficulty.stream);
@@ -315,16 +304,18 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
     difficulty.overall = downscale_low_accuracy_scores(overall, score_goal);
 
     // Cap all skillsets at 120% of the average, except stream/js/
-    // technical, those are capped at 125%
-    float aDvg = mean(skillset_vector(difficulty)) * 1.2f;
-    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg) * grindscaler, score_goal);
-    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.0416f) * grindscaler, score_goal);
-    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.0416f) * grindscaler, score_goal);
-    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg) * grindscaler, score_goal);
-    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg) * grindscaler, score_goal);
-    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg) * grindscaler, score_goal);
-    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg) * grindscaler, score_goal);
-    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.0416f) * grindscaler, score_goal);
+    // technical, those are capped at 125%.
+    // Also apply grindscaler to all of them.
+    // And downscale_low_accuracy_scores them, too.
+    float aDvg = mean(skillset_vector(difficulty));
+    difficulty.overall = downscale_low_accuracy_scores(min(difficulty.overall, aDvg * 1.2f) * grindscaler, score_goal);
+    difficulty.stream = downscale_low_accuracy_scores(min(difficulty.stream, aDvg * 1.25f) * grindscaler, score_goal);
+    difficulty.jumpstream = downscale_low_accuracy_scores(min(difficulty.jumpstream, aDvg * 1.25f) * grindscaler, score_goal);
+    difficulty.handstream = downscale_low_accuracy_scores(min(difficulty.handstream, aDvg * 1.2f) * grindscaler, score_goal);
+    difficulty.stamina = downscale_low_accuracy_scores(min(difficulty.stamina, aDvg * 1.2f) * grindscaler, score_goal);
+    difficulty.jack = downscale_low_accuracy_scores(min(difficulty.jack, aDvg * 1.2f) * grindscaler, score_goal);
+    difficulty.chordjack = downscale_low_accuracy_scores(min(difficulty.chordjack, aDvg * 1.2f) * grindscaler, score_goal);
+    difficulty.technical = downscale_low_accuracy_scores(min(difficulty.technical, aDvg * 1.25f) * grindscaler, score_goal);
 
     // Some more scaling
     difficulty.jumpstream *= jumpthrill;
@@ -340,20 +331,20 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
         difficulty.chordjack *= 0.9f;
     }
 
-    // Calculate and check minimum required percentage.
+    // Calculate and check minimum required percentage
     float minimum_required_percentage = transform(highest, 0, 0.5, 40, 0.9);
     if (score_goal < minimum_required_percentage) {
         difficulty = DifficultyRating {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
     }
 
-    // If technical is rated the highest skillset, but JS or HS are
-    // near to it, technical might be falsely rated too high. In that
-    // case, downscale
+    // If technical is rated the highest skillset, and JS or HS are
+    // near to it, downscale. Maybe it's to prevent technical being
+    // falsely rated too high?
     if (highest == difficulty.technical) {
         auto hs = difficulty.handstream;
         auto js = difficulty.jumpstream;
         
-        // If technical within 4.5 points of HS or JS, downscale it.
+        // If technical within 4.5 points of HS or JS, downscale it
         difficulty.technical -= CalcClamp(4.5f - (difficulty.technical - hs), 0.f, 4.5f);
         difficulty.technical -= CalcClamp(4.5f - (difficulty.technical - js), 0.f, 4.5f);
     }
@@ -366,8 +357,7 @@ DifficultyRating Calc::CalcMain(const vector<NoteInfo>& NoteInfo, float music_ra
 }
 
 // ugly jack stuff
-// Parameter j = JackSeq
-float Calc::JackLoss(const vector<float>& jackseq, float skill) {
+float Calc::JackLoss(const JackSeq& jackseq, float skill) {
     const float base_ceiling = 1.15f; // Jack multiplier max
     const float fscale = 1750.f; // How fast ceiling rises
     const float prop = 0.75f; // Proportion of player difficulty at which jack tax begins
@@ -377,7 +367,6 @@ float Calc::JackLoss(const vector<float>& jackseq, float skill) {
     float mod = 1.f;
     
     for (float jd : jackseq) { // Iterate interval's jack difficulties
-        // If
         // Decrease if jack difficulty is over 133% of player skill
         mod += ((jd/(prop*skill)) - 1) / mag;
         
@@ -404,7 +393,6 @@ float Calc::JackLoss(const vector<float>& jackseq, float skill) {
 //  2) (maybe bump that if the recent jack was really fast, i.e. minijack)
 //  3) calculating 2800ms/interval_avg,
 //  4) and maxing that out at the equivalent of 56 local NPS
-// nps
 // Returns a vector of each local jack speed difficulty
 JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, float music_rate) {
     vector<float> output;
@@ -549,8 +537,8 @@ void Hand::InitPoints(const Finger& f1, const Finger& f2) {
 }
 
 void Hand::StamAdjust(float skill, vector<float>& diff) {
-    float floor = 1.f;          // stamina multiplier min (increases as chart advances)
-    float mod = 1.f;            // multiplier
+    float floor = 1.f; // stamina multiplier min (increases as chart advances)
+    float multiplier = 1.f;
     float last_diff = 0.f;
 
     for (float& i : diff) {
@@ -560,16 +548,16 @@ void Hand::StamAdjust(float skill, vector<float>& diff) {
         
         // Higher number -> harder to sustain this difficulty for player
         float tax = diff_avg / (prop * skill);
-        mod += (tax - 1) / mag;
+        multiplier += (tax - 1) / mag;
         
         // If this section is particularly difficult, deplete stamina
         // a bit by raising the multiplier floor
-        if (mod > 1.f)
-            floor += (mod - 1) / fscale;
+        if (multiplier > 1.f)
+            floor += (multiplier - 1) / fscale;
         
         // Cap and apply multiplier
-        mod = CalcClamp(mod, floor, ceil);
-        i *= mod;
+        multiplier = CalcClamp(multiplier, floor, ceil);
+        i *= multiplier;
     }
 }
 
@@ -633,7 +621,7 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
             }
             if (columns == 2) {
                 jumps++;
-                taps += 2; //this gets added twice intentionally to mimic mina's ratings more closely
+                taps += 2; // this gets added twice intentionally to mimic mina's ratings more closely
             }
             taps += columns;
         }
@@ -777,8 +765,11 @@ vector<float> Calc::JumpDownscaler(const vector<NoteInfo>& NoteInfo) {
 }
 
 vector<float> Calc::RollDownscaler(const Finger& f1, const Finger& f2) {
-    vector<float> output(f1.size());    //this is slightly problematic because if one finger is longer than the other
-                                        //you could potentially have different results with f1 and f2 switched
+    // this is slightly problematic because if one finger is longer than
+    // the other you could potentially have different results with f1
+    // and f2 switched
+    vector<float> output(f1.size());
+
     for (size_t i = 0; i < f1.size(); i++) {
         // If there is none or only one note in this interval, skip
         if (f1[i].size() + f2[i].size() <= 1) {
@@ -836,7 +827,6 @@ MinaSD MinaSDCalc(const vector<NoteInfo>& NoteInfo) {
     return allrates;
 }
 
-int GetCalcVersion()
-{
+int GetCalcVersion() {
     return -1;
 }
