@@ -163,11 +163,11 @@ void Calc::Init(const vector<NoteInfo>& note_info, float music_rate, float score
     for (size_t i = 0; i < left_hand.v_itvpoints.size(); i++)
         MaxPoints += static_cast<float>(left_hand.v_itvpoints[i] + right_hand.v_itvpoints[i]);
     
-    // The base fingerbias value is calculated in Anchorscaler() which
-    // is called by InitializeHands(). That should definitely be moved
-    // to here in the future, because we don't want to have one single
-    // calculation split across several functions
-    fingerbias /= static_cast<float>(2 * nervIntervals.size());
+    // This +1 thing is probably by mistake; remove in future?
+    fingerbias = 1 + left_hand.fingerbias + right_hand.fingerbias;
+    // Fingerbias is a sum of fingerbiases per interval per hand, so
+    // dividing it like this makes it an average
+    fingerbias /= 2 * nervIntervals.size();
 }
 
 void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f2, float music_rate) {
@@ -182,6 +182,7 @@ void Calc::InitHand(Hand& hand, const vector<NoteInfo>& note_info, int f1, int f
     hand.rollscale = RollDownscaler(finger1, finger2);
     hand.hsscale = HSDownscaler(note_info);
     hand.jumpscale = JumpDownscaler(note_info);
+    hand.fingerbias = CalculateFingerbias(note_info, 1 << f1, 1 << f2);
 }
 
 /*
@@ -438,7 +439,7 @@ JackSeq Calc::SequenceJack(const vector<NoteInfo>& NoteInfo, unsigned int t, flo
             float jack_difficulty = 2.8f * local_nps;
             
             // Max out local jack speed difficulty at an equivalent of 
-            // ~17.857 NPS, I think
+            // ~17.857 NPS (remember, this is just one finger)
             jack_difficulty = min(jack_difficulty, 50.f);
             
             output.push_back(jack_difficulty);
@@ -654,8 +655,28 @@ vector<float> Calc::OHJumpDownscaler(const vector<NoteInfo>& NoteInfo, unsigned 
     return output;
 }
 
-// This function has an ugly side effect! It calculate `fingerbias`,
-// which should definitely not be done here!
+float Calc::CalculateFingerbias(const vector<NoteInfo>& NoteInfo, unsigned int finger1, unsigned int finger2) {
+    float fingerbias = 0;
+    
+    for (size_t i = 0; i < nervIntervals.size(); i++) {
+        int lcol = 0;
+        int rcol = 0;
+        for (int row : nervIntervals[i]) {
+            if (NoteInfo[row].notes & finger1)
+                ++lcol;
+            if (NoteInfo[row].notes & finger2)
+                ++rcol;
+        }
+        
+        float smaller_col = static_cast<float>(min(lcol, rcol));
+        float larger_col = static_cast<float>(max(lcol, rcol));
+        
+        fingerbias += (larger_col + 2.f) / (smaller_col + 1.f);
+    }
+    
+    return fingerbias;
+}
+
 vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int firstNote, unsigned int secondNote) {
     vector<float> output(nervIntervals.size());
 
@@ -681,9 +702,6 @@ vector<float> Calc::Anchorscaler(const vector<NoteInfo>& NoteInfo, unsigned int 
             // has way more notes than the other.
             output[i] = CalcClamp(sqrt(1 - (smaller_col / larger_col / 4.45f)), 0.8f, 1.05f);
         }
-        
-        // Pls move this out of here in the future
-        fingerbias += (larger_col + 2.f) / (smaller_col + 1.f);
 
         if (logpatterns)
             std::cout << "an " << output[i] << std::endl;

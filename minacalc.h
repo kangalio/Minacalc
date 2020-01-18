@@ -64,13 +64,14 @@ public:
     of points achieved by this hand. */
     float CalcInternal(float x, ChiselType flags, bool stam);
 
+    float fingerbias;
     std::vector<float> ohjumpscale, rollscale, hsscale, jumpscale, anchorscale;
     std::vector<int> v_itvpoints;   // Max points for each interval
     std::vector<float> v_itvNPSdiff, v_itvMSdiff;  // Calculated difficulty for each interval
 private:
     const bool SmoothDifficulty =
             true; // Do we moving average the difficulty intervals?
-
+    
     float basescaler = 2.564f * 1.05f * 1.1f * 1.10f * 1.10f *
                         1.025; // multiplier to standardize baselines
 
@@ -101,7 +102,9 @@ public:
     
     // Number of intervals
     int numitv;
-
+    
+    float CalculateFingerbias(const std::vector<NoteInfo>& NoteInfo, unsigned int finger1, unsigned int finger2);
+    
     void Init(const std::vector<NoteInfo>& note_info, float music_rate, float score_goal);
 
     /* Splits up the chart by each hand and calls ProcessFinger on each "track"
